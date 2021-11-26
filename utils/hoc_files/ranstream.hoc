@@ -1,0 +1,25 @@
+//------------------------------------------------------------------------------
+// Random Number stream
+// from:
+//      Networks of spiking neurons: a review of tools and strategies (Brette et al. 2007)
+//      https://senselab.med.yale.edu/ModelDB/showmodel.cshtml?model=83319&file=/destexhe_benchmarks/NEURON/common/netstim.hoc#tabs-2
+// see also:
+//      https://www.neuron.yale.edu/phpBB/viewtopic.php?t=251
+//------------------------------------------------------------------------------
+random_stream_offset_ = 1000
+begintemplate RandomStream
+    public r, repick, start, stream
+    external random_stream_offset_
+    objref r
+    proc init() {
+        stream = $1
+        r = new Random()
+        start()
+    }
+    func start() {
+        return r.MCellRan4(stream*random_stream_offset_ + 1)
+    }
+    func repick() {
+        return r.repick()
+    }
+endtemplate RandomStream

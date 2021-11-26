@@ -1,0 +1,91 @@
+Chloride_Model/ioCurve/results
+Chloride_Model/ioCurve/results_plots
+*.cpp
+
+*ipynb_checkpoints/
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Microsoft Office temp files
+~$*
+
+# Custom
+**/x86_64/*
+.asv
+
+# Libraries
+BBP/BGLibPy
+
+# =========================
+# Operating System Files
+# =========================
+
+# OSX
+# =========================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+.idea/workspace.xml
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/copyright/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/Postgrad-code.iml
+*.asv
+*.pyc
+*.tmp
+*.m~
+__pycache__
+
+*.iml
+
+Chloride_Model/ioCurve/nrnmech\.dll
+
+\.idea/
+
+*.md5
+
+Chloride_Model/spatiotemporal/temp/
+
+ssh
+
+utils/mod_files/nrnmech\.dll
+
+Chloride_Model/network/output/
+Chloride_Model/network/.cpp/
+
+*temp/
