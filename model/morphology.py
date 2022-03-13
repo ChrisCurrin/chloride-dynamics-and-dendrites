@@ -44,11 +44,24 @@ def create_radial_dends(self, num_dendrites=1, parent=None, **kwargs):
                                          parent=parent))
     self.sections += self.radial_dends
 
+def create_sinks(self, num_sinks=1, parent=None, **kwargs):
+    if parent is None:
+        parent = self.soma
+    self.sinks = []
+    for i in range(num_sinks):
+        self.sinks.append(Section(name='sink_{}'.format(i + 1),
+                                         L=self.sink_L,
+                                         diam=self.sink_diam,
+                                         nseg=self.sink_nseg,
+                                         Ra=self.Ra, cm=self.cm,
+                                         mechanisms=self.mechanisms,
+                                         parent=parent))
+    self.sections += self.sinks
 
 # noinspection PyAttributeOutsideInit
 class MultiDend(BaseNeuron):
     """
-    Soma with [num_dendrites-1] projecting from it.
+    Soma with [num_dendrites] projecting from it.
     """
 
     def __init__(self, name="MultiDend", num_dendrites=1,
@@ -70,6 +83,25 @@ class MultiDend(BaseNeuron):
         self.dend = self.radial_dends
 
     create_mechanisms = pas_mechanism
+
+# noinspection PyAttributeOutsideInit
+class MultiDendWithSink(MultiDend):
+    def __init__(self, name="MultiDendWithSink", 
+                 sink_num=1, sink_l=50, sink_diam=2, sink_nseg=9,
+                 *args, **kwargs):
+        self.num_sinks = sink_num
+        self.sink_L = sink_l
+        self.sink_diam = sink_diam
+        self.sink_nseg = sink_nseg
+        super(MultiDendWithSink, self).__init__(name, *args, **kwargs)
+
+    def build_sections(self, **kwargs):
+        super(MultiDendWithSink, self).build_sections(**kwargs)
+
+        create_sinks(self, num_sinks=self.num_sinks)
+
+        self.dend = self.radial_dends + self.sinks
+
 
 
 # noinspection PyAttributeOutsideInit,PyPep8Naming

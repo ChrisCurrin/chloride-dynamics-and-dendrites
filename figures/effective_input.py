@@ -40,14 +40,14 @@ def figure_input_structure_eff():
         B   |     C
 
     A: Shape plots for different effective number of branches
-        1/4, 2/4, 4/4, 8/4
+        1/4, 3/4, 4/4, 8/4
 
     B: IL vs Distance for different effective number of branches
-        1/4, 2/4, 4/4, 8/4
+        1/4, 3/4, 4/4, 8/4
 
     C: Accumulation Index (AI) vs Effective number of branches
         Use for branches of 4 and 8 so that effective numbers are in %
-        as 12.5 or 25, 50, 100, 200
+        as 12.5 or 25, 75, 100, 200
 
     """
     from main import run_inhib_level
@@ -66,8 +66,8 @@ def figure_input_structure_eff():
     gs.update(left=0.03, right=0.96, top=0.95, hspace=0.5, wspace=0.6)
     ax_eff_branches = []
     ax_cbs = []
-    plot_synapses = [1, 2, 4, 8]
-    il_x_lines_to_plot = [0.25, 0.5, 1, 2]
+    plot_synapses = [1, 3, 4, 8]
+    il_x_lines_to_plot = [0.25, 0.75, 1, 2]
     gs_morph = GridSpecFromSubplotSpec(
         4, 2, gs[0:2, 0:2], width_ratios=[10, 0.5], hspace=0.05, wspace=0
     )
@@ -148,6 +148,7 @@ def figure_input_structure_eff():
         plot_dict, sim_type, saved_args = run_inhib_level(
             f'--radial {base} --e_offsets {" ".join(e_off_s)} '
             f'--loc {" ".join(locs)} '
+            # f'--kcc2 Y '
             f"--synapse_dist=diffused "
             f"--plot_group_by=e_offsets "
             f"--plot_shape {shape_cmap}"
@@ -190,7 +191,7 @@ def figure_input_structure_eff():
             ax=ax_accidx_eff,
             marker="v",
             linestyle="--",
-            colors=[settings.cmap_dict["n_e"][base][e] for e in e_off],
+            color=[settings.cmap_dict["n_e"][base][e] for e in e_off],
             label=base,
             markeredgecolor="k",
             clip_on=False,
@@ -204,7 +205,7 @@ def figure_input_structure_eff():
                 ms=4,
                 lw=2,
                 markeredgewidth=0.1,
-                colors=[settings.cmap_dict["n_e"][base][e] for e in sub_e_off],
+                color=[settings.cmap_dict["n_e"][base][e] for e in sub_e_off],
                 label=base,
                 markeredgecolor="k",
                 clip_on=True,
@@ -224,7 +225,7 @@ def figure_input_structure_eff():
                     marker="o",
                     ms=6,
                     linestyle="--",
-                    colors=[settings.cmap_dict["n_e"][base][key]],
+                    color=[settings.cmap_dict["n_e"][base][key]],
                     label=base,
                     markeredgecolor="k",
                     clip_on=False,
@@ -461,7 +462,7 @@ def figure_input_structure_eff():
             ms=4,
             lw=2,
             markeredgewidth=0.1,
-            colors=[settings.cmap_dict["n_e"][base][e] for e in sub_e_off],
+            color=[settings.cmap_dict["n_e"][base][e] for e in sub_e_off],
             label=None,
             markeredgecolor="k",
             legend=False,

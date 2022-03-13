@@ -106,9 +106,9 @@ DERIVATIVE updateFluct{
 
 PROCEDURE new_seed(seed) {		: procedure to set the seed
 	set_seed(seed)
-	VERBATIM
-	  printf("Setting random generator with seed = %g\n", _lseed);
-	ENDVERBATIM
+	:VERBATIM
+	:  printf("Setting random generator with seed = %g\n", _lseed);
+	:ENDVERBATIM
 }
 
 NET_RECEIVE(weight) {

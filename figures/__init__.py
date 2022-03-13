@@ -4,3 +4,4 @@ from figures.location_distribution import figure_input_structure_loc_dist
 from figures.dynamic_il_time import figure_dynamic_il_time
 from figures.dynamic_il_location import figure_dynamic_il_loc
 from figures.explain import figure_explain
+from figures.sink import figure_sink

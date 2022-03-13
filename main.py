@@ -8,7 +8,7 @@ import logging
 
 from matplotlib import pyplot as plt
 import sys
-
+import yaml
 import shared
 from figures.dimensions import cl_radius_length, radius_length
 from figures.optimal_location import figure_optimal_loc
@@ -26,6 +26,7 @@ from figures import (
     figure_dynamic_il_time,
     figure_dynamic_il_loc,
     figure_explain,
+    figure_sink,
 )
 from shared import INIT
 
@@ -145,6 +146,13 @@ def parse_args(cmd_args=None):
         metavar="L",
         help="keep L constant (first value of diam if no arg provided), "
         "and hence electrotonic distance will vary with diameter",
+    )
+    morph_group.add_argument(
+        "--sink",
+        type=str,
+        default=None,
+        help="add a sink to the soma, which doesn't have any input and can have its properties varied. "
+        "Notably, keyword arguments are: l, diam, num, and nseg",
     )
 
     time_group = parser.add_argument_group("Timing")
@@ -306,6 +314,11 @@ def run_inhib_level(cmd_args=None, **kwargs):
             segs.append(loc)
         args.segments = segs
     dvv_kwargs = {"sections": args.sections, "select_segs": args.segments}
+
+    if args.sink is not None:
+        # add back spaces
+        sink = yaml.safe_load(args.sink.replace(":", ": ").replace(",", ", "))
+
     if args.compare:
         result = figure_explain()
     else:
@@ -317,6 +330,7 @@ def run_inhib_level(cmd_args=None, **kwargs):
             e_offsets=args.e_offsets,
             diams=args.diams,
             constant_L=args.constant_L,
+            sink=sink,
             plot_group_by=args.plot_group_by,
             voltage=args.v_trace,
             time=args.t_trace,
@@ -556,13 +570,14 @@ if __name__ == "__main__":
         run_inhib_level()  # will get arguments from sys.argv automatically
     else:
         # figure_explain()
-        figure_basic()
+        # figure_basic()
         # figure_input_structure_eff()
         # figure_input_structure_loc_dist()
         # figure_dynamic_il_time()
         # figure_dynamic_il_loc()
         # figure_optimal_loc()
         # radius_length()
+        figure_sink()
         # cl_radius_length(diam=1, sample_N=4)
         # cl_radius_length(diam=1, sample_N=1)
     logger.info(

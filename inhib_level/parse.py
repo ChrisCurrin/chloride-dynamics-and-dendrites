@@ -8,7 +8,7 @@ import shared
 from inhib_level.math import lambda_d, offset_index
 from inhib_level.plot import create_figure
 from inhib_level.simulation import run_sim
-from model.morphology import SingleDend, MultiDend
+from model.morphology import SingleDend, MultiDend, MultiDendWithSink
 
 import logging
 
@@ -23,6 +23,7 @@ def parse_and_run(
     e_offsets: list = None,
     diams: list = None,
     constant_L: bool = False,
+    sink: dict = None,
     voltage: bool = False,
     time: bool = None,
     plot_group_by: str = None,
@@ -45,6 +46,7 @@ def parse_and_run(
     :param e_offsets: Reversal potential of EGABA, offset from Vrest.
     :param diams: Change diameter, electrotonic distance will stay constant by changing L
     :param constant_L: keep L constant, electrotonic distance will vary with diameter
+    :param sink: dictionary of parameters for the chloride sink
     :param voltage: Show voltage plot
     :param time: Show time plot
     :param plot_group_by: Group traces by 'num_dendrites_arr' or 'e_offsets' instead of plotting everything on a
@@ -289,6 +291,19 @@ def parse_and_run(
             nseg or neuron_kwargs[f"{neuron_kw_pre}_nseg"]
         )  # assign from arg
         neuron_kwargs["add_kcc2"] = kcc2_option
+
+        if sink:
+            neuron_class = MultiDendWithSink
+            sink_keys = ["sink_l", "sink_diam", "sink_nseg"]
+            for key, val in sink.items():
+                if "sink" not in key:
+                    key = f"sink_{key}"
+                if key in sink_keys:
+                    sink_keys.remove(key)
+                neuron_kwargs[key] = val
+            for sink_key in sink_keys:
+                sink, key = sink_key.split("_")
+                neuron_kwargs[f"sink_{key}"] = neuron_kwargs[f"{neuron_kw_pre}_{key}"]
 
         show_input = False
 

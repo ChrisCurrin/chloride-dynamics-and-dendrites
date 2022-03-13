@@ -216,7 +216,7 @@ def run_sim(
         exc_n_loc_insert,
         e=0,
         gmax=g_e,
-        std_e=g_e * settings.STD_e,
+        std_e=g_e * settings.STD_e, 
         netstim_args=exc_netstim_args,
     )
     exc_synapses, exc_synapse_locations, exc_n_loc_insert_actual_short = result_tup
