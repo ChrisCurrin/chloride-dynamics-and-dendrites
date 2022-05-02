@@ -555,7 +555,7 @@ pdf.fonttype       : 42         ## Output Type 3 (Type3) or Type 42 (TrueType)
 
 ### svg backend params
 #svg.image_inline : True       ## write raster image data directly into the svg file
-#svg.fonttype :   path         ## How to handle SVG fonts:
+svg.fonttype :   none         ## How to handle SVG fonts:
 ##     none: Assume fonts are installed on the machine where the SVG will be viewed.
 ##     path: Embed characters as paths -- supported by most SVG renderers
 ##     svgfont: Embed characters as SVG fonts -- supported only by Chrome,

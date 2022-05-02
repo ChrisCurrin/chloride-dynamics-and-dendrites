@@ -5,19 +5,16 @@ import glob
 import hashlib
 import logging
 import os
+import colorlog
 import sys
 import seaborn as sns
 import numpy as np
 import pandas as pd
+import matplotlib
 
 from utils import settings
 from utils.use_files import create_dir
 
-# set up logging to file - see previous section for more details
-
-# logging.basicConfig(level=settings.LOG_LEVEL,
-#                     format='%(asctime)s %(name)-12s [%(filename)-15s:%(lineno)4d] %(levelname)-8s \t %(message)s',
-#                     datefmt='%m-%d %H:%M')
 logger = logging.getLogger('shared')
 # to log to file, add:
 # filename='/temp/myapp.log',
@@ -30,11 +27,29 @@ __KWARGS__ = {}
 
 def INIT(reinit=False):
     global initialised, t_vec, __KWARGS__
+
+    for logger_name in ["matplotlib.mathtext, colormath.color_conversions", "asyncio", "PIL.PngImagePlugin", "fontTools.subset"]:
+        logging.getLogger(logger_name).setLevel(logging.ERROR)
+
     if initialised and not reinit:
         return True
     else:
         initialised = True
-    import os
+    
+    matplotlib.use(settings.MATPLOTLIB_BACKEND)
+
+    # set up logging
+    handler = colorlog.StreamHandler()
+    fmt = '%(asctime)s %(name)-10s [%(filename)-10s:%(lineno)4d] %(levelname)-8s \t %(message)s'
+    datefmt = '%m-%d %H:%M:%S'
+    handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s' + fmt, datefmt=datefmt))
+
+    logging.basicConfig(
+            level=settings.LOG_LEVEL,
+            format=fmt,
+            handlers=[handler],
+            datefmt=datefmt)
+
     from neuron import h
     h.load_file("stdrun.hoc")
 

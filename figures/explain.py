@@ -63,15 +63,16 @@ def figure_explain():
     g_i = 2e-3  # convert from uS to S
     Rm = 20000
     Ra = 100
-    loc = [0.4]
+    loc = [0.4] # inhibitory synapses location i
     tstop = 200
     tm = 5
     diam = 1.0
     L = lambda_d(diam, Rm, Ra)
     # visual settings
     base = -65
-    _d = 0.3
-    _d_2 = 0.7
+    e_off = 0
+    _d = 0.3 # excitatory input location example 1
+    _d_2 = 0.7 # excitatory input location example 2
     d_locs = [_d, _d_2]
     plot_colors = ["#D394D6", "#D6967E", "#88D69A"]
     d_colors = [settings.COLOR.R, settings.COLOR.O]
@@ -89,7 +90,7 @@ def figure_explain():
     neuron = SingleDend(dend_L=L, dend_diam=diam, dend_nseg=81, Rm=Rm, Ra=Ra)
 
     inh_synapses, l1, l2 = add_synapse_type(
-        neuron, "inhfluct_simple", [(neuron.dend, loc)], e=-65, gmax=0, netstim_args={}
+        neuron, "inhfluct_simple", [(neuron.dend, loc)], e=base+e_off, gmax=0, netstim_args={}
     )
     exc_synapses, l1, l2 = add_synapse_type(
         neuron, "IClamp", [(neuron.dend, loc)], e=0, netstim_args={}
@@ -287,9 +288,9 @@ def figure_explain():
 
     tm_2_lines = ax_sl.plot(
         df_il.loc["dend_1"],
-        linestyle=":",
+        # linestyle=":",
         linewidth=1.0,
-        color=plot_colors[-1],
+        color='k',
         alpha=h_alpha_line,
         label=tm,
     )
@@ -309,9 +310,9 @@ def figure_explain():
             aid=Aid,
             adi=Adi,
         ),
-        color=plot_colors[0],
+        color='k',
         alpha=1.0,
-        lw=3,
+        lw=4,
     )
     drr = (df_sl["Rd"] - df_sl["Rd*"]) / df_sl["Rd"]
     sl_r = ax_sl.plot(
@@ -319,21 +320,22 @@ def figure_explain():
         label="$\\frac{{{rtop}}}{{{rbottom}}}$".format(
             rtop=f"{Rd} - {Rdi}".replace("$", ""), rbottom=f"{Rd}".replace("$", "")
         ),
-        linestyle="--",
-        color=plot_colors[1],
-        alpha=1.0,
-        lw=2.5,
+        # linestyle="--",
+        color='k',
+        alpha=0.5,
+        lw=2,
     )
     sl_v = ax_sl.plot(
         df_il.loc["dend_1"].iloc[:, -1],
         label=r"$\frac{{{vtop}}}{{{vbottom}}}$".format(
             vtop=f"{Vd} - {Vdi}".replace("$", ""), vbottom=f"{Vd}".replace("$", "")
         ),
-        linestyle=":",
-        color=plot_colors[2],
-        alpha=1.0,
-        lw=2,
+        # linestyle=":",
+        color='k',
+        alpha=0.2,
+        lw=1,
     )
+    # inhibitory synapse location
     df_imark = df_il.loc["dend_1"]
     i_idx = abs(loc[0] - df_imark.index).argmin()
     i_line = ax_sl.plot(
@@ -468,7 +470,7 @@ def figure_explain():
         square_df[_df.index].plot(
             ax=_ax_sl, marker=".", linestyle="None", ms=8, cmap=d_cmaps[_d_idx]
         )
-        _ax.set_ylim(base, base + 1)
+        # _ax.set_ylim(base, base + 1)
         _ax_sl.set_ylim(0, ax_sl.get_ylim()[1])
         _ax.set_xlim(0, tstop)
         _ax_sl.set_xlim(0, tstop)
@@ -552,6 +554,11 @@ def figure_explain():
     ax_time.xaxis.get_label().set_visible(True)
     ax_time.yaxis.tick_right()
     ax_time.yaxis.set_label_position("right")
+    # get ymin and ymax for ax_time and ax_time2
+    ymin = np.min([ax_time.get_ylim()[0], ax_time2.get_ylim()[0]])
+    ymax = np.max([ax_time.get_ylim()[1], ax_time2.get_ylim()[1]])
+    ax_time.set_ylim(ymin, ymax)
+    ax_time2.set_ylim(ymin, ymax)
 
     ax_sl.set_xlim(0, 1)
     # l = Line2D([], [], linestyle='None',

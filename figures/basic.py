@@ -114,7 +114,8 @@ def figure_basic():
     tm = settings.TSTOP
     plot_dict, sim_type, saved_args = run_inhib_level(
         f"--precise --radial 1 2 4 8 16 --loc {loc} --e_offsets 0 -1 -2 -5 --plot_group_by=e_offsets"
-        f" --sections=radial_dends_1 --plot_shape"
+        f" --sections=radial_dends_1 --plot_shape" 
+        # " --with-v-trace"
     )
     xlim = (0, 1)
     copy_lines(plot_dict["0"][1][0], ax_SL, rel_lw=1.5)

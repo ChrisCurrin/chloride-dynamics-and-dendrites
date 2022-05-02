@@ -1,4 +1,5 @@
 import logging
+import numbers
 
 import numpy as np
 import pandas as pd
@@ -105,7 +106,6 @@ def inhib_level_plot(
     # for i, loc in enumerate(inhib_loc):
     #     inhib_loc[i] = loc + min(abs(loc - df_il.index.values))
 
-    col_samples = None
     if settings.Vm in named_axes:
         logger.info(
             """
@@ -114,46 +114,24 @@ def inhib_level_plot(
                                                 ##########################"""
         )
         # choose samples to plot
-        section_sample = inhib_n_loc_insert_actual_short[0][0]
-        if type(section_sample) is list:
-            section_sample = section_sample[0]
-        if type(section_sample) is str:
-            if "[" in section_sample:
-                section_sample, index = section_sample.split("[")
-                index = int(index[:-1]) + 1  # ignore ']'
-            else:
-                index = "1"
-            section_sample_name = "{}_{}".format(section_sample, index)
-            exists = getattr(neuron, section_sample_name, False)
-            if not exists:
-                section_sample_name = section_sample
+        
+        v_samples = hotspot_record_locations if at_hotspot else inhib_n_loc_insert_actual_short
+        # only vsamples that are in df_v columns
+        valid_vsamples = set(df_v.columns.values)
+        v_samples = [sample for sample in v_samples if sample in valid_vsamples]
+
+        Vm_color_cycle = [opacity(50, "7f7f7f")]
+
+        if colormap is not None:
+            import seaborn as sns
+            color_cycle = cycler("color", sns.color_palette(colormap, len(v_samples)))
         else:
-            section_sample_name = section_sample.name()
-        cols = df_v[section_sample_name].columns
-        mid = int(len(cols) / 2)
-        quart = int(mid / 2)
-        col_samples = cols[[0, quart, mid, mid + quart, -1]].values
-        v_samples = [(section_sample_name, v_sample) for v_sample in col_samples]
+            color_cycle = cycler("color", Vm_color_cycle)
 
-        # also include places of input
-        hot_locs = [h_loc for h_sec, h_loc in hotspot_record_locations]
-        col_samples = np.sort(
-            list(set(np.append(col_samples, hot_locs + inhib_synapse_locations)))
-        )
-
-        Vm_color_cycle = []
-        for i, column in enumerate(df_v[section_sample_name].columns):
-            if at_hotspot and column in hot_locs:
-                Vm_color_cycle.append(opacity(100, "d62728"))
-            elif not at_hotspot and column in inhib_synapse_locations:
-                Vm_color_cycle.append(opacity(100, "1f77b4"))
-            else:
-                Vm_color_cycle.append(opacity(10, "7f7f7f"))
-        color_cycle = cycler("color", Vm_color_cycle)
         named_axes[settings.Vm].set_prop_cycle(color_cycle)
 
         # plot
-        named_axes[settings.Vm].plot(df_v, linestyle="-")
+        named_axes[settings.Vm].plot(df_v[v_samples], linestyle="-")
         # plot input events
         if show_input:
             plot_input_events(
@@ -161,113 +139,10 @@ def inhib_level_plot(
             )
 
         # named_axes[settings.Vm].plot(df_v_star.loc[:, v_samples], linestyle='--')
-        named_axes[settings.Vm].plot(df_v_star, linestyle="--")
+        named_axes[settings.Vm].plot(df_v_star[v_samples], linestyle="--")
 
-        vd_legend = named_axes[settings.Vm].get_legend()
-        if vd_legend is not None:
-            labels_Vd = [
-                text.get_text() for text in vd_legend.texts
-            ]  # contains Text objects
-            labels_Vd = list(filter(lambda x: not x.startswith("("), labels_Vd))
-        else:
-            labels_Vd = []
-        # remove generated ones from dataframe
-        labels_kv = {}
-        for prev_label_vd in labels_Vd:
-            d_start = prev_label_vd.find("{") + 1
-            if prev_label_vd[d_start : d_start + 4] == "soma":
-                prev_label_loc = 0.00
-            else:
-                prev_label_loc = float(prev_label_vd[d_start : d_start + 4])
-            labels_kv[prev_label_loc] = prev_label_vd
-        # lines,labels_Vd_star = named_axes[settings.Vm].get_legend_handles_labels()
-        for i, sample in enumerate(v_samples):
-            sec_name = sample[0]
-            loc = sample[1]
-            extra = ""
-            if loc in hot_locs:
-                extra = "(hotspot)"
-            elif loc in inhib_synapse_locations:
-                extra = "(g_i)"
-            elif loc == min(col_samples):
-                loc = (
-                    np.nan
-                )  # a ".replace('nan','')" hack is required below to remove the 'nan' as .2f requires a
-                # float
-                extra = "soma"
-            vd_label = settings.Vd.replace(
-                "d", "{:.2f}{}".format(loc, extra).replace("nan", "")
-            )
-            label = vd_label.replace("V_", "")
-            if vd_label not in labels_Vd:
-                labels_Vd.append(vd_label)
-            if loc == np.nan:
-                loc = 0.00
-            if loc not in labels_kv or len(label) > len(labels_kv[loc]):
-                labels_kv[loc] = label
-            # labels_Vd_star.append(settings.Vdstar.replace('d', "{:.2f}{}".format(loc, extra).replace('nan', '')))
-
-        # created ordered tuple on labels_kv keys
-        ordered_loc_labels = OrderedDict(sorted(labels_kv.items()))
-        ordered_labels = list(ordered_loc_labels.values())
-        ordered_locs = list(ordered_loc_labels.keys())
-        if np.nan in ordered_locs:
-            index = ordered_locs.index(np.nan)
-            ordered_locs[index] = 0.00
-
-        # legend of voltage trace
-        # we now have all labels from all sims
-        rgb_colors = plt.get_cmap("Greys", len(labels_Vd) + 1)
-        custom_lines = []
-        for i, label in enumerate(ordered_labels):
-            if "hotspot" in label or "g_i" in label:
-                color = opacity(50, colors.rgb2hex(rgb_colors(i + 1)[:3]))
-            else:
-                color = opacity(50, colors.rgb2hex(rgb_colors(i + 1)[:3]))
-            custom_lines.append(Line2D([], [], color=color, linestyle="-"))
-        l = named_axes[settings.Vm].legend(
-            custom_lines,
-            ordered_labels,
-            bbox_to_anchor=(0.0, 1.02, 1.0, 0.102),
-            loc=4,
-            ncol=4,
-            mode=None,
-            borderaxespad=0.0,
-            fontsize="xx-small",
-        )
-        if len(named_axes) >= 5:
-            # colorbar as legend
-            full_grey_cmap = plt.get_cmap("Greys")
-
-            # Get the colormap colors
-            my_cmap = full_grey_cmap(np.arange(full_grey_cmap.N))
-            # Set alpha
-            my_cmap[:, -1] = 1
-            # Create new colormap
-            my_cmap = colors.ListedColormap(my_cmap)
-            # bounds = v_samples
-            # norm = colors.BoundaryNorm(v_sample_locs, full_grey_cmap.N)
-            cb2 = colorbar.ColorbarBase(
-                named_axes[settings.Vm],
-                cmap=my_cmap,
-                # norm=norm,
-                ticks=ordered_locs,  # optional
-                spacing="proportional",
-                orientation="vertical",
-            )
-            cb2.ax.tick_params(axis="y", which="minor", colors="blue")
-            cb2.set_ticklabels(ordered_labels)
-            cb2.set_label("Location, d (X)")
-
-        # plt.colorbar(rgb_colors,ax=named_axes[settings.Vm])
-        l.set_title(
-            "{} \u2500  \t {} \u254C".format(settings.Vd, settings.Vdstar),
-            prop={
-                "family": "serif",
-                "stretch": "normal",
-                "weight": "bold",
-                "size": "large",
-            },
+        named_axes[settings.Vm].set_title(
+            "{} \u2500  \t {} \u254C".format(settings.Vd, settings.Vdstar), fontfamily='serif', weight='bold'
         )
 
     if settings.TIME in named_axes:
@@ -886,4 +761,20 @@ def plot_shape_values(
                     )
                     ax_shape.annotate(**annotation)
                     annotations.append(annotation)
+    
+    # add sink if it hasn't already been added (and plot to the left of the soma)
+    if hasattr(neuron, "sinks") and "sink_1" not in plot_sections:
+        select_il = df.T[["sink_1"]].T
+        # remove 0.0 and 1.0 as these were added in with `dummy_seg`
+        _zero = select_il.xs(0.0, level=1, drop_level=False)
+        _one = select_il.xs(1.0, level=1, drop_level=False)
+        select_il = select_il.loc[
+            ~select_il.index.isin(_zero.index) & ~select_il.index.isin(_one.index)
+        ]
+        il_values = select_il.values.flatten()
+        if cmap:
+            shapeplot2d(h, ax_shape, sections=neuron.sinks, cvals=il_values, cmap=cmap, plot_right=False)
+        else:
+            shapeplot2d(h, ax_shape, sections=neuron.sinks, cvals=il_values, plot_right=False)
+    
     return f_shape, ax_shape, annotations

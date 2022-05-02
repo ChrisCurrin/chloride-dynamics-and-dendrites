@@ -662,6 +662,7 @@ def copy_lines(src, ax_dest, xlim=None, xunit=None, rel_lw=2., cmap=None, **kwar
             xlim = [int(xlim/xunit), -1]
     if cmap is not None and type(cmap) is str:
         cmap = plt.get_cmap(cmap)
+    new_lines = []
     for i, line in enumerate(lines):
         props = {}
         for prop, getter in line_props.items():
@@ -676,8 +677,9 @@ def copy_lines(src, ax_dest, xlim=None, xunit=None, rel_lw=2., cmap=None, **kwar
         if xlim is not None and xunit is not None:
             x = x[xlim[0]:xlim[1]]
             y = y[xlim[0]:xlim[1]]
-        ax_dest.plot(x, y, **props)
-
+        line, = ax_dest.plot(x, y, **props)
+        new_lines.append(line)
+    return new_lines
 
 class Annotation3D(Annotation):
     """Annotate the point xyz with text s"""
@@ -702,7 +704,7 @@ def annotate3D(ax, s, *args, **kwargs):
 
 
 def shapeplot2d(h, ax, sections=None, order='pre', cvals=None,
-                clim=None, cmap='viridis_r', **kwargs):
+                clim=None, cmap='viridis_r', plot_right=True, **kwargs):
     """
     Plots a 2D shapeplot (altered and inherits from PyNeuronToolbox)
 
@@ -745,6 +747,9 @@ def shapeplot2d(h, ax, sections=None, order='pre', cvals=None,
     lines = []
     i = 0
     cvals_idx = 0
+
+    lw_kwargs = "lw" in kwargs or "linewidth" in kwargs
+
     for (i, sec) in enumerate(sections):
         xyz = get_section_path(h, sec)
         seg_paths = interpolate_jagged(xyz, sec.nseg)
@@ -753,7 +758,11 @@ def shapeplot2d(h, ax, sections=None, order='pre', cvals=None,
         for (j, path) in enumerate(seg_paths):
             zorder = -j if j > len(seg_paths)/2 else 0
             zorder -= i*sec.nseg
-            line, = ax.plot(path[:, 0], path[:, 1], '-k', zorder=zorder, **kwargs)
+            _x = path[:, 0] if plot_right else -1*path[:, 0]
+            if not lw_kwargs:
+                # linewidth not specified in kwargs, so use default
+                kwargs["lw"] = sec.diam*2
+            line, = ax.plot(_x, path[:, 1], '-k', zorder=zorder, **kwargs)
             if cvals is not None:
                 if cvals_idx >= cvals.size:
                     cvals_idx = 0  # repeat from 0

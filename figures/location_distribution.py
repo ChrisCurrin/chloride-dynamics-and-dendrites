@@ -21,7 +21,7 @@ import logging
 logger = logging.getLogger()
 
 
-def figure_input_structure_loc_dist():
+def figure_input_structure_loc_dist(dist_base=8, plot_e_off="0.0"):
     """ How input structure (location & distribution) affect IL accum
 
     Ai   ii   iii  |   B  |   C
@@ -57,7 +57,7 @@ def figure_input_structure_loc_dist():
     tm = settings.TSTOP
     loc_list = [0.005, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.995]
     radial_list = [1, 2, 4, 6, 8]
-    e_offset_list = [0.0, -2.0]
+    e_offset_list = [0.0, -2.0, -5.0]
     dist_list = ["diffused", "clustered_n", "clustered"]
     dist_names = {"diffused": "Tree", "clustered_n": "Branch", "clustered": "Focal"}
 
@@ -159,102 +159,102 @@ def figure_input_structure_loc_dist():
     letter_axes(ax_dist_shapes[0], start="E", xy=(-0.05, 1.05))
     letter_axes(ax_IL_dist, start="F", xy=(-0.18, 1.05))
 
-    logger.info(
-        """
-    ####################################################################################################################
-    # IL, Accumulation vs LOCATION (A,B,C)
-    ####################################################################################################################
-    """
-    )
+    # logger.info(
+    #     """
+    # ####################################################################################################################
+    # # IL, Accumulation vs LOCATION (A,B,C)
+    # ####################################################################################################################
+    # """
+    # )
 
-    plot_dict, sim_type, saved_args = run_inhib_level(
-        f"--radial {radial_list_str} --loc {loc_list_str} --e_offsets {e_offsets}"
-        " --synapse_dists=diffused_matched "
-        " --plot_group_by=num_dendrites_arr --plot_color_by=e_offsets --plot_shape"
-        " --sections=radial_dends_1" + " --quick"
-    )
+    # plot_dict, sim_type, saved_args = run_inhib_level(
+    #     f"--radial {radial_list_str} --loc {loc_list_str} --e_offsets {e_offsets}"
+    #     " --synapse_dists=diffused_matched "
+    #     " --plot_group_by=num_dendrites_arr --plot_color_by=e_offsets --plot_shape"
+    #     " --sections=radial_dends_1" + " --quick"
+    # )
 
-    for ax_key, ax in plot_dict[plot_radial][2].items():
-        if ax_key == settings.IL:
-            ax_lines = ax.get_lines()
-            lines = []
-            marker_lines = []
-            for li, line in enumerate(ax_lines):
-                for e in plot_e_offs:
-                    if f"e={e}" in line.get_label():
-                        lines.append(ax_lines[li - 2])
-                        marker_lines.append(ax_lines[li - 1])
-                        copy_lines_kwargs = dict(
-                            rel_lw=0.5, color=cmap_dict["line"], clip_on=False
-                        )
-                        copy_lines(
-                            ax_lines[li - 2],
-                            ax_IL_dict[e],
-                            zorder=-99,
-                            alpha=0.5,
-                            **copy_lines_kwargs,
-                        )
-                        copy_lines(
-                            ax_lines[li - 1],
-                            ax_IL_dict[e],
-                            zorder=+99,
-                            markerfacecolor=marker_colors[e],
-                            markeredgecolor="k",
-                            ms=7,
-                            **copy_lines_kwargs,
-                        )
-        elif ax_key.startswith("SHAPE") and ax_key.endswith("AX"):
-            # plot neuron shapes
-            n = int(ax_key[ax_key.index("n=") + 2 : ax_key.index("/")])
-            e = ax_key[ax_key.index("e=") + 2 : ax_key.index("(")]
-            x = float(ax_key[ax_key.index("x=[") + 3 : ax_key.index("]")])
-            if x in plot_locs and e in plot_e_offs:
-                ax_idx = int(plot_locs.index(x) + plot_e_offs.index(e) * len(plot_locs))
-                copy_lines(ax, ax_loc_shapes[ax_idx], clip_on=False)
-                underscore_idx = ax_key.rfind("_")
-                annotation_key = ax_key[:underscore_idx] + "_ANNOTATIONS"
-                annotations = plot_dict[plot_radial][2][annotation_key]
-                for annotation in annotations:
-                    # get consistent color across figure
-                    annotation["arrowprops"]["facecolor"] = marker_colors[e]
-                    ax_loc_shapes[ax_idx].annotate(**annotation)
+    # for ax_key, ax in plot_dict[plot_radial][2].items():
+    #     if ax_key == settings.IL:
+    #         ax_lines = ax.get_lines()
+    #         lines = []
+    #         marker_lines = []
+    #         for li, line in enumerate(ax_lines):
+    #             for e in plot_e_offs:
+    #                 if f"e={e}" in line.get_label():
+    #                     lines.append(ax_lines[li - 2])
+    #                     marker_lines.append(ax_lines[li - 1])
+    #                     copy_lines_kwargs = dict(
+    #                         rel_lw=0.5, color=cmap_dict["line"], clip_on=False
+    #                     )
+    #                     copy_lines(
+    #                         ax_lines[li - 2],
+    #                         ax_IL_dict[e],
+    #                         zorder=-99,
+    #                         alpha=0.5,
+    #                         **copy_lines_kwargs,
+    #                     )
+    #                     copy_lines(
+    #                         ax_lines[li - 1],
+    #                         ax_IL_dict[e],
+    #                         zorder=+99,
+    #                         markerfacecolor=marker_colors[e],
+    #                         markeredgecolor="k",
+    #                         ms=7,
+    #                         **copy_lines_kwargs,
+    #                     )
+    #     elif ax_key.startswith("SHAPE") and ax_key.endswith("AX"):
+    #         # plot neuron shapes
+    #         n = int(ax_key[ax_key.index("n=") + 2 : ax_key.index("/")])
+    #         e = ax_key[ax_key.index("e=") + 2 : ax_key.index("(")]
+    #         x = float(ax_key[ax_key.index("x=[") + 3 : ax_key.index("]")])
+    #         if x in plot_locs and e in plot_e_offs:
+    #             ax_idx = int(plot_locs.index(x) + plot_e_offs.index(e) * len(plot_locs))
+    #             copy_lines(ax, ax_loc_shapes[ax_idx], clip_on=False)
+    #             underscore_idx = ax_key.rfind("_")
+    #             annotation_key = ax_key[:underscore_idx] + "_ANNOTATIONS"
+    #             annotations = plot_dict[plot_radial][2][annotation_key]
+    #             for annotation in annotations:
+    #                 # get consistent color across figure
+    #                 annotation["arrowprops"]["facecolor"] = marker_colors[e]
+    #                 ax_loc_shapes[ax_idx].annotate(**annotation)
 
-    il_dict = saved_args["il_dict"]
-    df_accum = pd.DataFrame(
-        index=loc_list, columns=pd.MultiIndex.from_product([radial_list, e_offset_list])
-    )
-    for key, df in il_dict.items():
-        if key == "units":
-            continue
-        n = int(key[key.index("n=") + 2 : key.index("/")])
-        e = float(key[key.index("e=") + 2 : key.index("(")])
-        accum = accumulation_index(df, loc_list)
-        for x in loc_list:
-            df_accum.loc[x, (n, e)] = accum[x][tm]
+    # il_dict = saved_args["il_dict"]
+    # df_accum = pd.DataFrame(
+    #     index=loc_list, columns=pd.MultiIndex.from_product([radial_list, e_offset_list])
+    # )
+    # for key, df in il_dict.items():
+    #     if key == "units":
+    #         continue
+    #     n = int(key[key.index("n=") + 2 : key.index("/")])
+    #     e = float(key[key.index("e=") + 2 : key.index("(")])
+    #     accum = accumulation_index(df, loc_list)
+    #     for x in loc_list:
+    #         df_accum.loc[x, (n, e)] = accum[x][tm]
 
-    for n_dend in radial_list:
-        cmap = settings.cmap_dict["n_e"][n_dend]
-        for e, data in df_accum[n_dend].iteritems():
-            plot_args = dict(
-                linestyle="--",
-                marker="v",
-                markeredgecolor="k",
-                color=cmap[e],
-                alpha=1.0,
-                clip_on=False,
-                zorder=10,
-            )
-            ax_accidx_dict[str(e)].plot(data, **plot_args)
-            if n_dend == plot_radial_key:
-                ax_accidx_loc_n.plot(data, ms=7, lw=1, **plot_args)
-                ax_accidx_loc_n.annotate(
-                    f"{e:>4.1f} mV",
-                    xy=(1, data.iloc[-1] * 0.9),
-                    ha="center",
-                    va="top",
-                    fontsize="small",
-                    c=cmap[e],
-                )
+    # for n_dend in radial_list:
+    #     cmap = settings.cmap_dict["n_e"][n_dend]
+    #     for e, data in df_accum[n_dend].iteritems():
+    #         plot_args = dict(
+    #             linestyle="--",
+    #             marker="v",
+    #             markeredgecolor="k",
+    #             color=cmap[e],
+    #             alpha=1.0,
+    #             clip_on=False,
+    #             zorder=10,
+    #         )
+    #         ax_accidx_dict[str(e)].plot(data, **plot_args)
+    #         if n_dend == plot_radial_key:
+    #             ax_accidx_loc_n.plot(data, ms=7, lw=1, **plot_args)
+    #             ax_accidx_loc_n.annotate(
+    #                 f"{e:>4.1f} mV",
+    #                 xy=(1, data.iloc[-1] * 0.9),
+    #                 ha="center",
+    #                 va="top",
+    #                 fontsize="small",
+    #                 c=cmap[e],
+    #             )
 
     logger.info(
         """
@@ -263,10 +263,10 @@ def figure_input_structure_loc_dist():
     ####################################################################################################################
     """
     )
-    base = 4
-    plot_e_off = "-2.0"
+    # dist_base = 8
+    # plot_e_off = "0.0"
     plot_dict, sim_type, saved_args = run_inhib_level(
-        f'--radial {base} --e_offsets {e_offsets} --loc {" ".join(["0.2"]*base)} '
+        f'--radial {dist_base} --e_offsets {e_offsets} --loc {" ".join(["0.2"]*dist_base)} '
         f" --synapse_dists {dist_list_str} "
         " --kcc2=N "
         " --plot_group_by=e_offsets --plot_color_by=synapse_dist"
@@ -308,7 +308,7 @@ def figure_input_structure_loc_dist():
                 for annotation in annotations:
                     ax_dist_shapes[ax_idx].annotate(**annotation)
                 ax_dist_shapes[ax_idx].annotate(
-                    s=dist_names[dist],
+                    dist_names[dist],
                     xy=(0.5, -0.1),
                     xycoords="axes fraction",
                     ha="center",
@@ -347,7 +347,7 @@ def figure_input_structure_loc_dist():
         fontsize="smaller",
     )
     ax_dist_shapes[0].annotate(
-        f"{settings.NABLAEGABA} = -2 mV",
+        f"{settings.NABLAEGABA} = {plot_e_off} mV",
         xy=(0.0, 0.5),
         xycoords="axes fraction",
         rotation=90,
@@ -429,6 +429,9 @@ def figure_input_structure_loc_dist():
     if settings.SAVE_FIGURES:
         plot_save(
             "output/figure_structure_loc_dist.png", figs=save_png_figs, close=False
+        )
+        plot_save(
+            "output/figure_structure_loc_dist.svg", figs=save_png_figs, close=False
         )
         plot_save("output/figure_structure_loc_dist.pdf")
     else:

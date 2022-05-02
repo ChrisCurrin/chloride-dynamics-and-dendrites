@@ -234,88 +234,88 @@ def figure_optimal_loc():
 
         df_cluster_branch.plot()
 
-        # # spacing of clustering
-        # inh_distances = [0.001, 0.01, 0.1]
-        # locs_i = np.round(np.arange(0.01, 0.11, 0.01), 5)
-        # locs_i = loc_list[1:-1]
-        # df_space = pd.DataFrame(index=locs_i,
-        #                         columns=pd.MultiIndex.from_product([inh_distances, radials_diff],
-        #                                                            names=['Spacing', 'Branches']))
-        # df_long_space = pd.DataFrame(columns=['Spacing', 'Branches', 'i', 'd', 'IL'])
-        # for num_branches, loc in itertools.product([4], locs_i):
-        #     for inh_dist in inh_distances:
-        #         logger.info(f"num_branches={num_branches} loc={loc} inh_dist={inh_dist}")
-        #         loc_xs = np.round(np.linspace(np.max([0.001, loc - inh_dist]),
-        #                                       np.min([loc + inh_dist, 0.999]),
-        #                                       num_branches),
-        #                           5)
-        #         main_args = f'--radial {num_branches} --loc {str(loc_xs)[1:-1]} '\
-        #                     f' --e_offsets {e_offset} --synapse_dists clustered --kcc2=Y '\
-        #                     f'--plot_group_by=num_dendrites --plot_color_by=num_synapses'\
-        #                     f' --tstop={tstop} --tm={tm} --diams {1} '\
-        #                     ' --precise --sections=radial_dends_1 --nseg=267 --plot_shape'
-        #         plot_dict, sim_type, saved_args = run_inhib_level(main_args)
-        #
-        #         il_dict = saved_args['il_dict']
-        #         ecl_dict = saved_args['ecl_dict']
-        #         index = il_dict['units'].index
-        #         # i = d
-        #         loc_idx = abs(loc - index.levels[1]).argmin()
-        #         for key, _df in il_dict.items():
-        #             if key == 'units':
-        #                 continue
-        #             n = int(key[key.index('n=') + 2:key.index('/')])
-        #             dist = key[key.index('\n'):key.index('x=')].strip()
-        #             e = float(key[key.index('e=') + 2:key.index('(')])
-        #             cl = key[key.index('(') + 1:key.index(')')]
-        #
-        #             il = _df.loc[('radial_dends_1', tstop)].astype(float)
-        #             df_space.loc[loc, (inh_dist, n)] = (il.idxmax(), il.max())
-        #             df_long_space.loc[df_long_space.shape[0]] = (inh_dist, n, loc, il.idxmax(), il.max())
-        #
-        # df_long_space['d_round'] = df_long_space.d.round(2)
-        # # df_long_space['i space N'] = \
-        # #     df_long_space.apply(lambda x: f"{x['i']} +- {x['Spacing']} ({x['Branches']})", axis=1)
-        # df_long_space['i space'] =\
-        #     df_long_space.apply(lambda x: f"{x['i']} +- {x['Spacing']}", axis=1)
-        # cs = [settings.cmap_dict['n_e'][n]['line'] for n in radials_diff]
-        # import seaborn as sns
-        # g = sns.relplot(x="i", y="IL",
-        #                 hue="Branches",
-        #                 col="Spacing",
-        #                 style='Spacing',
-        #                 size="d",
-        #                 sizes=(20, 100),
-        #                 palette=cs,
-        #                 ec='k',
-        #                 legend="brief",
-        #                 data=df_long_space)
-        # g.fig.tight_layout()
-        # g = sns.relplot(x="i", y="IL",
-        #                 row="Branches",
-        #                 col="Spacing",
-        #                 hue="d_round",
-        #                 style='Spacing',
-        #                 size="d_round",
-        #                 sizes=(20, 100),
-        #                 palette="Set2",
-        #                 ec='k',
-        #                 legend="brief",
-        #                 facet_kws=dict(margin_titles=True),
-        #                 data=df_long_space)
-        # g.set(ylim=(-0.5, 2))
-        # g.fig.tight_layout()
-        # g = sns.relplot(x="i", y="d",
-        #                 col="Branches",
-        #                 hue="IL",
-        #                 style='Spacing',
-        #                 size="Spacing",
-        #                 sizes=(100, 20),
-        #                 hue_norm=(0, 2),
-        #                 palette="viridis",
-        #                 legend="brief",
-        #                 data=df_long_space)
-        # g.fig.tight_layout()
+        # spacing of clustering
+        inh_distances = [0.001, 0.01, 0.1]
+        locs_i = np.round(np.arange(0.01, 0.11, 0.01), 5)
+        locs_i = loc_list[1:-1]
+        df_space = pd.DataFrame(index=locs_i,
+                                columns=pd.MultiIndex.from_product([inh_distances, radials_diff],
+                                                                   names=['Spacing', 'Branches']))
+        df_long_space = pd.DataFrame(columns=['Spacing', 'Branches', 'i', 'd', 'IL'])
+        for num_branches, loc in itertools.product([4], locs_i):
+            for inh_dist in inh_distances:
+                logger.info(f"num_branches={num_branches} loc={loc} inh_dist={inh_dist}")
+                loc_xs = np.round(np.linspace(np.max([0.001, loc - inh_dist]),
+                                              np.min([loc + inh_dist, 0.999]),
+                                              num_branches),
+                                  5)
+                main_args = f'--radial {num_branches} --loc {str(loc_xs)[1:-1]} '\
+                            f' --e_offsets {e_offset} --synapse_dists clustered --kcc2=Y '\
+                            f'--plot_group_by=num_dendrites --plot_color_by=num_synapses'\
+                            f' --tstop={tstop} --tm={tm} --diams {1} '\
+                            ' --precise --sections=radial_dends_1 --nseg=267 --plot_shape'
+                plot_dict, sim_type, saved_args = run_inhib_level(main_args)
+        
+                il_dict = saved_args['il_dict']
+                ecl_dict = saved_args['ecl_dict']
+                index = il_dict['units'].index
+                # i = d
+                loc_idx = abs(loc - index.levels[1]).argmin()
+                for key, _df in il_dict.items():
+                    if key == 'units':
+                        continue
+                    n = int(key[key.index('n=') + 2:key.index('/')])
+                    dist = key[key.index('\n'):key.index('x=')].strip()
+                    e = float(key[key.index('e=') + 2:key.index('(')])
+                    cl = key[key.index('(') + 1:key.index(')')]
+        
+                    il = _df.loc[('radial_dends_1', tstop)].astype(float)
+                    df_space.loc[loc, (inh_dist, n)] = (il.idxmax(), il.max())
+                    df_long_space.loc[df_long_space.shape[0]] = (inh_dist, n, loc, il.idxmax(), il.max())
+        
+        df_long_space['d_round'] = df_long_space.d.round(2)
+        # df_long_space['i space N'] = \
+        #     df_long_space.apply(lambda x: f"{x['i']} +- {x['Spacing']} ({x['Branches']})", axis=1)
+        df_long_space['i space'] =\
+            df_long_space.apply(lambda x: f"{x['i']} +- {x['Spacing']}", axis=1)
+        cs = [settings.cmap_dict['n_e'][n]['line'] for n in radials_diff]
+        import seaborn as sns
+        g = sns.relplot(x="i", y="IL",
+                        hue="Branches",
+                        col="Spacing",
+                        style='Spacing',
+                        size="d",
+                        sizes=(20, 100),
+                        palette=cs,
+                        ec='k',
+                        legend="brief",
+                        data=df_long_space)
+        g.fig.tight_layout()
+        g = sns.relplot(x="i", y="IL",
+                        row="Branches",
+                        col="Spacing",
+                        hue="d_round",
+                        style='Spacing',
+                        size="d_round",
+                        sizes=(20, 100),
+                        palette="Set2",
+                        ec='k',
+                        legend="brief",
+                        facet_kws=dict(margin_titles=True),
+                        data=df_long_space)
+        g.set(ylim=(-0.5, 2))
+        g.fig.tight_layout()
+        g = sns.relplot(x="i", y="d",
+                        col="Branches",
+                        hue="IL",
+                        style='Spacing',
+                        size="Spacing",
+                        sizes=(100, 20),
+                        hue_norm=(0, 2),
+                        palette="viridis",
+                        legend="brief",
+                        data=df_long_space)
+        g.fig.tight_layout()
 
         df_il_r.index = pd.Index(np.round(df_il_r.index, 2), name=settings.LOCATION_X_)
 

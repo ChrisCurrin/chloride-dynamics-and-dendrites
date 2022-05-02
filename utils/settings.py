@@ -3,7 +3,6 @@ import os
 import platform
 import logging
 
-import colorlog
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -27,21 +26,7 @@ ZOOM_BORDER_PAD_TIGHT = 0.
 # ----------------------------------------------------------------------------------------------------------------------
 # SET LOGGER
 # ----------------------------------------------------------------------------------------------------------------------
-handler = colorlog.StreamHandler()
-fmt = '%(asctime)s %(name)-10s [%(filename)-10s:%(lineno)4d] %(levelname)-8s \t %(message)s'
-datefmt = '%m-%d %H:%M:%S'
-handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s' + fmt, datefmt=datefmt))
-
-logging.basicConfig(
-        level=logging.DEBUG,
-        format=fmt,
-        handlers=[handler],
-        datefmt=datefmt)
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-logging.getLogger("colormath.color_conversions").setLevel(logging.WARNING)
-logging.getLogger("asyncio").setLevel(logging.WARNING)
-logging.getLogger("PIL.PngImagePlugin").setLevel(logging.WARNING)
-
+LOG_LEVEL = logging.INFO
 
 # ----------------------------------------------------------------------------------------------------------------------
 # NEURON
@@ -80,6 +65,7 @@ RANDOM_STREAM_OFFSET = 1000
 # ----------------------------------------------------------------------------------------------------------------------
 # MATPLOTLIB PLOT CONFIG
 # ----------------------------------------------------------------------------------------------------------------------
+MATPLOTLIB_BACKEND = "Agg"
 article_style_path = "article.mplstyle"
 if not os.path.isfile(article_style_path):
     # find the file
@@ -302,7 +288,7 @@ n_branches_cmaps = {
     4:  'Greens_r',
     6:  'Purples_r',
     8:  'Oranges_r',
-    16: 'Reds_r'
+    16: 'PuRd'
     }
 n_branches_cmap = {}
 e_cmaps = {
@@ -320,9 +306,9 @@ kcc2_cmaps = {
     }
 t_offset_cmap = {}
 syn_dist_cmaps = {
-    "diffused":    "Greens",
-    "clustered":   "BuGn_r",
-    "clustered_n": "BuPu_r",
+    "diffused":    "summer", # Tree
+    "clustered":   "afmhot", # Focal
+    "clustered_n": "copper", # Branch
     }
 cmap_dict = {
     'num_synapses':   n_branches_cmaps,
