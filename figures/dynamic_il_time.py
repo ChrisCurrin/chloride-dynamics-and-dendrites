@@ -8,7 +8,16 @@ from matplotlib.axes import Axes
 from matplotlib.cbook import flatten
 from matplotlib.ticker import MaxNLocator
 
-from utils import settings
+try:
+    from utils import settings
+except ModuleNotFoundError:
+    import sys
+    from pathlib import Path
+    # find the script's directory
+    script_dir = Path(__file__).parent.parent.absolute()
+    sys.path.insert(0, str(script_dir))
+    from utils import settings
+
 from inhib_level.math import accumulation_index
 from utils.plot_utils import (
     adjust_spines,
@@ -18,6 +27,7 @@ from utils.plot_utils import (
     plot_save,
     new_gridspec,
 )
+
 
 import logging
 
@@ -411,9 +421,9 @@ def figure_dynamic_il_time():
             elif not shared_clim_il and _pd == 0:
                 adjust_spines(ax_t_n1_l2_hm_shared, [], 0)  # hide heatmap
             if val["clim"] is None:
-                norm = colors.Normalize(0, 1)
-            else:
-                norm = colors.Normalize(*val["clim"])
+                val["clim"] = [0, 1]
+            
+            norm = colors.Normalize(*val["clim"])
             cb = fig.colorbar(
                 cm.ScalarMappable(norm=norm, cmap=val["cmap"]),
                 cax=_ax_hm,
@@ -834,3 +844,26 @@ def figure_dynamic_il_time():
         import shared
 
         shared.show_n(1)
+
+
+if __name__ == "__main__":
+    # parse arguments
+    # with default radials_diff=(2, 4, 6, 8), diams=(1., 0.5, 1.5, 2.), constant_L=True, kcc2="Y"
+    import argparse
+
+    parser = argparse.ArgumentParser(description="")
+    # add verbose
+    parser.add_argument("-v", "--verbose", action="store_true")
+    # add very verbose
+    parser.add_argument("-vv", "--very_verbose", action="store_true")
+    args = parser.parse_args()
+
+    if args.very_verbose:
+        logging.basicConfig(level=logging.DEBUG, force=True)
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO, force=True)
+    else:
+        logging.basicConfig(level=logging.WARNING, force=True)
+
+    # run
+    figure_dynamic_il_time()

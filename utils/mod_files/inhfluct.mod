@@ -37,10 +37,11 @@ NEURON {
 	POINT_PROCESS inhfluct
 	RANGE g_i, g_i0, g_fluct
 	RANGE std_i, tau_i, D_i
-	RANGE pcl, phco3, egaba, Tdur
+	RANGE pcl, phco3, egaba, X
+	RANGE Tdur
 	RANGE new_seed
-	USEION cl READ ecl WRITE icl VALENCE -1
-	USEION hco3 READ ehco3 WRITE ihco3 VALENCE -1
+	USEION cl READ cli, clo, ecl WRITE icl VALENCE -1
+	USEION hco3 READ hco3i, hco3o, ehco3 WRITE ihco3 VALENCE -1
 }
 
 UNITS {
@@ -50,6 +51,8 @@ UNITS {
 	(mA) 	= (milliamp)
 	(molar)	= (1/liter)
 	(mM) 	= (millimolar)
+	FARADAY = (faraday) (coulomb)
+	R = (k-mole) (joule/degC)
 }
 
 PARAMETER {
@@ -68,11 +71,17 @@ ASSIGNED {
 	D_i		(umho umho /ms) : inhibitory diffusion coefficient
 	exp_i
 	amp_i	(umho)
-	icl 	(nA)		
+	cli		(mM)	: chloride concentration (inside)
+	clo		(mM)	: chloride concentration (outside)
+	icl		(nA)	: chloride current
 	ecl		(mV)	: chloride reversal potential
+	hco3i	(mM)	: bicarbonate concentration (inside)
+	hco3o	(mM)	: bicarbonate concentration (outside)
 	ihco3	(nA)	: bicarbonate current
 	ehco3	(mV)	: bicarbonate reversal potential
 	egaba	(mV)	: overall reversal potential
+	X		(1)		: Relative permeability ratio
+	celsius	(degC)	: temperature
 }
 
 STATE{ 
@@ -98,13 +107,23 @@ BREAKPOINT {
 
 	g_i = g_i0 + g_fluct
 	if(g_i < 0) { g_i = 0 }
-	icl  = g_i * pcl * (v - ecl)
-  	ihco3 = g_i * phco3 * (v - ehco3)
-  	egaba = pcl*ecl + phco3*ehco3
+	
+	egaba = ghk()
+
+	X = (ehco3 - egaba)/(ehco3 - ecl)
+
+	icl  = g_i * X * (v - ecl)
+  	ihco3 = g_i * (1-X) * (v - ehco3)
 }
 
 DERIVATIVE updateFluct{
 	g_fluct' = -g_fluct/tau_i + amp_i*normrand(0,1)/dt
+}
+
+FUNCTION ghk() (mV) {
+	LOCAL RTF
+	RTF = ((R/FARADAY)*(celsius + 273.15))
+	ghk = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o))
 }
 
 PROCEDURE new_seed(seed) {		: procedure to set the seed

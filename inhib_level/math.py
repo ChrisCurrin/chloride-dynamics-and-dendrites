@@ -5,6 +5,7 @@ from collections import namedtuple
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from neuron import h
 
 from utils import settings
@@ -273,11 +274,23 @@ def dvv(
         logger.info("running dvv with quick={}".format(quick))
         start = time.time()
         dummy_seg = namedtuple("seg", ["x"])
-        N = (
-            neuron.total_nseg + len(neuron.sections) * 2
-        )  # included 0.0 and 1.0 for each section
-        n = 1
-        old_n_perc = 0
+        
+        if sections is None:
+            N = (
+                neuron.total_nseg + len(neuron.sections) * 2
+            )  # included 0.0 and 1.0 for each section
+        else:
+            # count the number of iterations based on the specified sections (and the soma)
+            N = 0
+            for i, sec in enumerate(neuron.sections):
+                if (sec.name() != "soma") and (
+                    (type(sections[0]) is str and sec.name() not in sections) or (
+                        type(sections[0]) is int and i not in sections
+                    )):
+                        continue
+                N += sec.nseg + 2 # included 0.0 and 1.0 for each section
+
+        pbar = tqdm(total=N, desc=f"dvv for {neuron.name}")
         for i, sec in enumerate(neuron.sections):
             if sections is not None and sec.name() != "soma":
                 if (type(sections[0]) is str and sec.name() not in sections) or (
@@ -300,6 +313,7 @@ def dvv(
                             f"skipping {rounded_x} (rounded from {x}) as it is not in 'segments' arg "
                             f"[{select_segs}]"
                         )
+                        pbar.update()
                         continue
 
                 columns = pd.MultiIndex.from_product(
@@ -337,6 +351,7 @@ def dvv(
                         logger.debug(
                             "{}({:.5f}) \t nan (end segment)".format(sec.name(), x)
                         )
+                        pbar.update()
                         continue
                 # change object (e.g. iclamp) location to stim at d (as per definition of IL)
                 # if object is inhib, this is IL @ hotspot
@@ -367,12 +382,6 @@ def dvv(
                         f"\t IL~{-((df_v_star.iloc[-1, -1] - df_v.iloc[-1, -1]) / df_v.iloc[-1, -1]):.5f} "
                         f"\t df sizes: V={df_v.size} V*={df_v_star.size}"
                     )
-                else:
-                    n_perc = round(100 * n / N, 0)
-                    if n_perc != old_n_perc:
-                        logger.info(f"{'#'*int(n_perc)} {n_perc:>3.0f}%")
-                        old_n_perc = n_perc
-                n += 1
                 if calc_shunt:
                     if "IClamp" in exc[0]["label"]:
                         rd_v = df_v.iloc[-1, -1] / stim_obj.amp
@@ -391,6 +400,8 @@ def dvv(
                         df_sl = _df_sl
                     else:
                         df_sl = df_sl.join(_df_sl)
+                pbar.update()
+
         logger.info("running took {:.2f}s".format(time.time() - start))
 
         if quick:

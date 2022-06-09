@@ -204,7 +204,7 @@ def run_sim(
         set_global_cli(inhib_synapses[0], egaba=v_init + e_offset)
         neuron.ions["cli"] = h.cli0_cl_ion
         logger.debug(
-            "cli after  setting EGABA to {:.2f} : {:.5f}".format(
+            "cli after setting EGABA to {:.2f} : {:.5f}".format(
                 v_init + e_offset, h.cli0_cl_ion
             )
         )

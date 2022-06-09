@@ -7,6 +7,7 @@ import logging
 import os
 import colorlog
 import sys
+import warnings
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -150,10 +151,12 @@ def save_dvv(serializable_obj, extra, df_v, df_v_star, input_events, df_sl=None,
     df_v.to_hdf(fname, key='df_v', mode='w')  # new file
     df_v_star.to_hdf(fname, key='df_v_star')
     input_events.to_hdf(fname, key='input_events')
-    if df_sl is not None:
-        df_sl.to_hdf(fname, key='df_sl')
-    if df_ecl is not None:
-        df_ecl.to_hdf(fname, key='df_ecl')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if df_sl is not None:
+            df_sl.to_hdf(fname, key='df_sl')
+        if df_ecl is not None:
+            df_ecl.to_hdf(fname, key='df_ecl')
     with open(fname.replace("h5", "txt"), 'w') as arg_file:
         arg_file.write(full_str)
 

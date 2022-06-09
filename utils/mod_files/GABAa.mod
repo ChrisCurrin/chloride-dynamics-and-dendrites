@@ -48,12 +48,11 @@ NEURON {
 	THREADSAFE
 	POINT_PROCESS GABAa
 	RANGE g, gmax
-	RANGE pcl, phco3
-	RANGE Tdur, Alpha
-    RANGE Beta, Rinf, Rtau
-	USEION cl READ ecl WRITE icl VALENCE -1
-	USEION hco3 READ ehco3 WRITE ihco3 VALENCE -1
-	USEION gaba WRITE egaba VALENCE -1
+	RANGE pcl, phco3, egaba, X
+	RANGE Tdur
+    RANGE Alpha, Beta, Rinf, Rtau
+	USEION cl READ cli, clo, ecl WRITE icl VALENCE -1
+	USEION hco3 READ hco3i, hco3o, ehco3 WRITE ihco3 VALENCE -1
 }
 
 UNITS {
@@ -62,6 +61,8 @@ UNITS {
 	(uS) = (microsiemens)
 	(M)  = (1/liter)
 	(mM) = (milliM)
+	FARADAY = (faraday) (coulomb)
+	R = (k-mole) (joule/degC)
 }
 
 PARAMETER {
@@ -78,11 +79,16 @@ PARAMETER {
 ASSIGNED {
 	v       (mV)    : postsynaptic voltage
 	g       (uS)    : total conductance
+	cli		(mM)	: chloride concentration (inside)
+	clo		(mM)	: chloride concentration (outside)
 	icl		(nA)	: chloride current
 	ecl		(mV)	: chloride reversal potential
+	hco3i	(mM)	: bicarbonate concentration (inside)
+	hco3o	(mM)	: bicarbonate concentration (outside)
 	ihco3	(nA)	: bicarbonate current
 	ehco3	(mV)	: bicarbonate reversal potential
 	egaba	(mV)	: overall reversal potential
+	X		(1)		: Relative permeability ratio
 	celsius	(degC)	: temperature
 	Rtau 	(ms)	: time constant of channel binding
 	Rinf 			: fraction of open channels if transmitter is present forever
@@ -102,15 +108,28 @@ INITIAL {
 
 BREAKPOINT {
 	SOLVE release METHOD cnexp
+
 	g 	 = gmax * (Ron + Roff)
-	icl  = g * pcl * (v - ecl)
-  	ihco3 = g * phco3 * (v - ehco3)
-  	egaba = pcl*ecl + phco3*ehco3
+
+	egaba = ghk()
+
+	X = (ehco3 - egaba)/(ehco3 - ecl)
+
+	icl  = g * X * (v - ecl)
+  	ihco3 = g * (1-X) * (v - ehco3)
+  	
 }
 
 DERIVATIVE release {
 	Ron' = (synon*Rinf - Ron)/Rtau
 	Roff' = -Beta*Roff
+}
+
+
+FUNCTION ghk() (mV) {
+	LOCAL RTF
+	RTF = ((R/FARADAY)*(celsius + 273.15))
+	ghk = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o))
 }
 
 NET_RECEIVE(weight, on, r0, t0 (ms), rt, ri) {

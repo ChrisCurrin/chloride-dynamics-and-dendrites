@@ -113,35 +113,45 @@ def get_base_vm_cli(neuron_model=None, default_cli=4, **kwargs):
     h.finitialize()
     return vm, cli
 
-
 def set_global_cli(syn_dict, egaba=-65.0):
     """
-    EGABA is calculated as follows:
-    icl  = g_i * pcl * (v - ecl)
-    ihco3 = g_i * phco3 * (v - ehco3)
-    egaba = pcl*ecl + phco3*ehco3
+    EGABA is calculated using Goldmann-Hodgkin-Katz equation:
+    EGABA = RT/F * ln((pcl*cli + phco3*hco3i) / (pcl*clo + phco3*hco3o))
 
     pcl		= 0.8				: permeability fraction of Cl
     phco3	= 0.2				: permeability fraction of HCO3
 
-    ECl = (RT/-F) * ln(clo/cli)
-    ECL * -F / RT = ln(clo/cli)
-    e^[ECL * -F / RT] = clo/cli
-    cli = clo / e^[ECL * -F / RT]
-    cli = clo * e^[ECL * F / RT]
+    R = ~8.314   # Real gas constant (J K^-1 mol^-1)
+    F = ~96485   # Faraday constant (C mol^-1)
+    T = ~310.25  # Temperature (K)
+    RTF = R*T/F # All treated as constant for the simulations
+
+    EGABA * F/RT = ln((pcl*cli + phco3*hco3i) / (pcl*clo + phco3*hco3o))
+    e^(EGAB*F/RT) = (pcl*cli + phco3*hco3i) / (pcl*clo + phco3*hco3o)
+    (pcl*clo + phco3*hco3o) * e^(EGABA*F/RT) = (pcl*cli + phco3*hco3i)
+    (pcl*clo + phco3*hco3o) * e^(EGABA*F/RT) - phco3*hco3i = pcl*cli
+    1/pcl * ((pcl*clo + phco3*hco3o) * e^(EGABA*F/RT) - phco3*hco3i) = cli
 
     """
     from shared import env_var
     h.finitialize()
     syn_obj = syn_dict['object']
     sec_obj = syn_dict['sec']
+    RTF = (h.R * (h.celsius+273.15)) / h.FARADAY
+    clo = sec_obj.clo
+    hco3o = sec_obj.hco3o
+    hco3i = sec_obj.hco3i
     ehco3 = sec_obj.ehco3
+    pcl = syn_obj.pcl
+    phco3 = syn_obj.phco3
     assert ehco3 < 0.
-    ecl = (egaba - syn_obj.phco3*sec_obj.ehco3)/syn_obj.pcl
+    
+    cli = ((pcl*clo + phco3*hco3o) * np.exp((1/RTF) * (egaba/1000)) - phco3*hco3i)
+
+    ecl = h.nernst(cli, clo, -1)
     # try ecl explicitly as this works if there's no kcc2
     sec_obj.ecl = ecl
-    ecl_V = ecl/1000
-    h.cli0_cl_ion = h.clo0_cl_ion * np.exp(ecl_V*h.FARADAY/(h.R * (h.celsius+273.15)))
-    env_var(cli=h.cli0_cl_ion, clo=h.clo0_cl_ion, pcl=syn_obj.pcl, ecl=ecl, phco3=syn_obj.phco3, ehco3=sec_obj.ehco3,
+    h.cli0_cl_ion = cli
+    env_var(cli=cli, clo=clo, pcl=syn_obj.pcl, ecl=ecl, phco3=syn_obj.phco3, ehco3=sec_obj.ehco3,
             egaba=egaba)
 

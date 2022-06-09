@@ -571,16 +571,16 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         run_inhib_level()  # will get arguments from sys.argv automatically
     else:
-        figure_explain()
-        figure_basic()
-        figure_input_structure_eff()
-        figure_input_structure_loc_dist()
-        figure_dynamic_il_time()
+        # figure_explain()
+        # figure_basic()
+        # figure_input_structure_eff()
+        # figure_input_structure_loc_dist()
+        # figure_dynamic_il_time()
         figure_dynamic_il_loc()
-        figure_optimal_loc()
+        # figure_optimal_loc()
         # radius_length()
-        figure_sink()
-        cl_radius_length(diam=1, sample_N=4)
+        # figure_sink()
+        # cl_radius_length(diam=1, sample_N=4)
         # cl_radius_length(diam=1, sample_N=1)
     logger.info(
         "COMPLETED\n{}\n** run_inhib_level took {:.2f}s\n{}".format(

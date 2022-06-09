@@ -189,11 +189,11 @@ def figure_dynamic_il_loc():
         plotting_loc = list(loc_list) + list(loc_list_zoom) + list(loc_list_end)
         for li, loc in enumerate(plotting_loc):
             main_args = (
-                f"--radial {radial} --loc={loc} --with-t-trace={loc}"
-                f" --e_offsets {e_offset} --synapse_dists=diffused_matched --kcc2=C "
-                f"--plot_color_by=num_synapses"
-                f" --tstop={tstop} --tm={tm} --diams {diam} "
-                " --precise --sections=radial_dends_1 --plot_shape "
+                f"--radial {radial} --loc={loc} --with-t-trace={loc} "
+                f"--e_offsets {e_offset} --synapse_dists=diffused_matched --kcc2=C "
+                f"--plot_color_by=num_synapses --plot_shape "
+                f"--tstop={tstop} --tm={tm} --diams {diam} "
+                f"--precise --sections=radial_dends_1 "
             )
             if constant_L:
                 main_args += f" --constant_L={constant_L}"
