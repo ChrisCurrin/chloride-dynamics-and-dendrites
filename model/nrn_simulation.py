@@ -152,6 +152,6 @@ def set_global_cli(syn_dict, egaba=-65.0):
     # try ecl explicitly as this works if there's no kcc2
     sec_obj.ecl = ecl
     h.cli0_cl_ion = cli
-    env_var(cli=cli, clo=clo, pcl=syn_obj.pcl, ecl=ecl, phco3=syn_obj.phco3, ehco3=sec_obj.ehco3,
+    env_var(cli=cli, clo=clo, pcl=syn_obj.pcl, ecl=ecl, 
+            hco3i=hco3i, hco3o=hco3o, phco3=syn_obj.phco3, ehco3=sec_obj.ehco3,
             egaba=egaba)
-

@@ -4,7 +4,16 @@ from matplotlib import pyplot as plt, cm, colors
 from matplotlib.lines import Line2D
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
-from utils import settings
+try:
+    from utils import settings
+except ModuleNotFoundError:
+    import sys
+    from pathlib import Path
+    # find the script's directory
+    script_dir = Path(__file__).parent.parent.absolute()
+    sys.path.insert(0, str(script_dir))
+    from utils import settings
+
 from utils.settings import gi, Rd, Rdi, Ri, Aid, Adi, Vd, Vdi, ILd
 from inhib_level.math import lambda_d, dvv
 from model.morphology import SingleDend
@@ -601,3 +610,27 @@ def figure_explain():
         plot_save("output/figure_explain.png", figs=[fig], close=False)
         plot_save("output/figure_explain.pdf")
     return saved_args, func_name, plot_dict
+
+
+
+if __name__ == "__main__":
+    # parse arguments
+    # with default radials_diff=(2, 4, 6, 8), diams=(1., 0.5, 1.5, 2.), constant_L=True, kcc2="Y"
+    import argparse
+
+    parser = argparse.ArgumentParser(description="")
+    # add verbose
+    parser.add_argument("-v", "--verbose", action="store_true")
+    # add very verbose
+    parser.add_argument("-vv", "--very_verbose", action="store_true")
+    args = parser.parse_args()
+
+    if args.very_verbose:
+        logging.basicConfig(level=logging.DEBUG, force=True)
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO, force=True)
+    else:
+        logging.basicConfig(level=logging.WARNING, force=True)
+
+    # run
+    figure_explain()

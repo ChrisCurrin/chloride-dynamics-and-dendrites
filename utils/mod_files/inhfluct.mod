@@ -96,6 +96,7 @@ INITIAL {
 		exp_i = exp(-dt/tau_i)
 		amp_i = std_i * sqrt( (1-exp(-2*dt/tau_i)) )
 	}
+	ghk()
 }
 
 BREAKPOINT {
@@ -108,7 +109,7 @@ BREAKPOINT {
 	g_i = g_i0 + g_fluct
 	if(g_i < 0) { g_i = 0 }
 	
-	egaba = ghk()
+	ghk()
 
 	X = (ehco3 - egaba)/(ehco3 - ecl)
 
@@ -120,10 +121,10 @@ DERIVATIVE updateFluct{
 	g_fluct' = -g_fluct/tau_i + amp_i*normrand(0,1)/dt
 }
 
-FUNCTION ghk() (mV) {
+PROCEDURE ghk(){
 	LOCAL RTF
 	RTF = ((R/FARADAY)*(celsius + 273.15))
-	ghk = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o))
+	egaba = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o)) * 1000 : (mV)
 }
 
 PROCEDURE new_seed(seed) {		: procedure to set the seed

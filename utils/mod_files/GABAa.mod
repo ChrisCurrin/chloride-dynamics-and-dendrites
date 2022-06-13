@@ -104,14 +104,15 @@ INITIAL {
 	synon = 0
 	Rtau  = 1 / (Alpha + Beta)
 	Rinf  = Alpha / (Alpha + Beta)
+	ghk()
 }
 
 BREAKPOINT {
 	SOLVE release METHOD cnexp
 
-	g 	 = gmax * (Ron + Roff)
+	g = gmax * (Ron + Roff)
 
-	egaba = ghk()
+	ghk()
 
 	X = (ehco3 - egaba)/(ehco3 - ecl)
 
@@ -126,10 +127,10 @@ DERIVATIVE release {
 }
 
 
-FUNCTION ghk() (mV) {
+PROCEDURE ghk() {
 	LOCAL RTF
 	RTF = ((R/FARADAY)*(celsius + 273.15))
-	ghk = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o))
+	egaba = RTF * log((pcl*cli + phco3*hco3i)/(pcl*clo + phco3*hco3o)) * 1000 : (mV)
 }
 
 NET_RECEIVE(weight, on, r0, t0 (ms), rt, ri) {

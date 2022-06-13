@@ -9,7 +9,7 @@ from matplotlib.cbook import flatten
 from matplotlib.colors import ListedColormap
 
 from utils import settings
-from inhib_level.math import accumulation_index
+from inhib_level.math import accumulation_index, ghk, inv_nernst
 from utils.plot_utils import (
     adjust_spines,
     copy_lines,
@@ -225,14 +225,20 @@ def figure_dynamic_il_loc():
                 df_accum.loc[loc, plot_map[cl]] = accum[loc][tstop]
             if loc in loc_points_morph:
                 ev = env_var()
-                pcl, ecl, phco3, ehco3, egaba, vinit = (
+                pcl, ecl, phco3, ehco3, egaba_init, clo, hco3i, hco3o, vinit = (
                     ev["pcl"],
                     ev["ecl"],
                     ev["phco3"],
                     ev["ehco3"],
                     ev["egaba"],
+                    ev["clo"],
+                    ev["hco3i"],
+                    ev["hco3o"],
                     ev["v_init"],
                 )
+                cli = inv_nernst(ecl_dict[dyn_iter_label]["radial_dends_1"].iloc[-1], ev["clo"])
+                egaba = ghk([clo, hco3o],[cli, hco3i], [pcl, phco3], [-1, -1])
+                
                 sta_iter_label = [key for key in il_dict if "(-)" in key][0]
                 dyn_iter_label = [key for key in il_dict if settings.DELTA in key][0]
                 df_loc[_STATIC, loc] = il_dict[sta_iter_label].loc[
@@ -241,10 +247,7 @@ def figure_dynamic_il_loc():
                 df_loc[_DYNAMIC, loc] = il_dict[dyn_iter_label].loc[
                     ("radial_dends_1", tstop)
                 ]
-                df_loc["EGABA", loc] = (
-                    pcl * ecl_dict[dyn_iter_label]["radial_dends_1"].iloc[-1]
-                    + phco3 * ehco3
-                )
+                df_loc["EGABA", loc] = egaba
 
                 for ax_key, _ax in plot_dict[0][2].items():
                     if r != -1 and ax_key.startswith("SHAPE") and ax_key.endswith("AX"):

@@ -18,7 +18,7 @@ except ModuleNotFoundError:
     sys.path.insert(0, str(script_dir))
     from utils import settings
 
-from inhib_level.math import accumulation_index
+from inhib_level.math import accumulation_index, ghk, inv_nernst
 from utils.plot_utils import (
     adjust_spines,
     copy_lines,
@@ -207,14 +207,18 @@ def figure_dynamic_il_time():
         df_time = pd.DataFrame(index=t_index)
 
         ev = env_var()
-        pcl, ecl, phco3, ehco3, egaba, vinit = (
+        pcl, ecl, phco3, ehco3, egaba, clo, hco3i, hco3o, vinit = (
             ev["pcl"],
             ev["ecl"],
             ev["phco3"],
             ev["ehco3"],
             ev["egaba"],
+            ev["clo"],
+            ev["hco3i"],
+            ev["hco3o"],
             ev["v_init"],
         )
+        
         loc_idx = abs(sample_loc - df_t.index).argmin()
 
         highlight_cmap = settings.truncate_colormap(
@@ -229,10 +233,13 @@ def figure_dynamic_il_time():
             e = float(plot_key[plot_key.index("e=") + 2 : plot_key.index("(")])
             cl = plot_key[plot_key.index("(") + 1 : plot_key.index(")")]
             if cl == settings.DELTA:
-                egaba_t = pcl * ecl_dict[plot_key]["radial_dends_1"] + phco3 * ehco3
+                indx = ecl_dict[plot_key]["radial_dends_1"].index
+                
+                # egaba_t = pcl * ecl_dict[plot_key]["radial_dends_1"] + phco3 * ehco3
                 for t_point in t_points:
-                    t_idx = abs(t_point - egaba_t.index).argmin()
-                    df_t[("EGABA", t_point)] = egaba_t.iloc[t_idx]
+                    t_idx = abs(t_point - indx).argmin()
+                    cli_t = inv_nernst(ecl_dict[plot_key]["radial_dends_1"].iloc[t_idx], ev["clo"])
+                    df_t[("EGABA", t_point)] = ghk([clo, hco3o],[cli_t, hco3i], [pcl, phco3], [-1, -1])
             for t_point in t_points:
                 df_t[(plot_map[cl], t_point)] = _df.loc["radial_dends_1", t_point]
             df_time[plot_map[cl]] = (
@@ -341,7 +348,7 @@ def figure_dynamic_il_time():
             if plot_key == "relative":
                 val["clim"] = None
                 continue
-            val["clim"]: List[float] = [
+            val["clim"] = [
                 df_t[plot_key].min().min(),
                 df_t[plot_key].max().max(),
             ] if shared_clim_t else None
@@ -536,12 +543,15 @@ def figure_dynamic_il_time():
 
         # EGABA
         ev = env_var()
-        pcl, ecl, phco3, ehco3, egaba, vinit = (
+        pcl, ecl, phco3, ehco3, egaba, clo, hco3i, hco3o, vinit = (
             ev["pcl"],
             ev["ecl"],
             ev["phco3"],
             ev["ehco3"],
             ev["egaba"],
+            ev["clo"],
+            ev["hco3i"],
+            ev["hco3o"],
             ev["v_init"],
         )
         for key, _df in ecl_dict.items():
@@ -550,7 +560,10 @@ def figure_dynamic_il_time():
             n = int(key[key.index("n=") + 2 : key.index("/")])
             e = float(key[key.index("e=") + 2 : key.index("(")])
             cl = key[key.index("(") + 1 : key.index(")")]
-            _df_erev = pcl * _df + phco3 * ehco3
+
+            cli = inv_nernst(_df, ev["clo"])
+            _df_erev = ghk([clo, hco3o],[cli, hco3i], [pcl, phco3], [-1, -1])
+            # _df_erev = pcl * _df + phco3 * ehco3
             idx = abs(X - _df_erev["radial_dends_1"].columns).argmin()
             df_erev_loc[(n, e, cl)] = _df_erev["radial_dends_1"].iloc[:, idx]
             df_erev_junction[(n, e, cl)] = _df_erev["soma", 0.5]
@@ -850,6 +863,7 @@ if __name__ == "__main__":
     # parse arguments
     # with default radials_diff=(2, 4, 6, 8), diams=(1., 0.5, 1.5, 2.), constant_L=True, kcc2="Y"
     import argparse
+    from shared import INIT
 
     parser = argparse.ArgumentParser(description="")
     # add verbose
@@ -859,11 +873,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.very_verbose:
-        logging.basicConfig(level=logging.DEBUG, force=True)
+        INIT(reinit=True, log_level=logging.DEBUG)
     elif args.verbose:
-        logging.basicConfig(level=logging.INFO, force=True)
+        INIT(reinit=True, log_level=logging.INFO)
     else:
-        logging.basicConfig(level=logging.WARNING, force=True)
+        INIT(reinit=True, log_level=logging.WARNING)
 
     # run
     figure_dynamic_il_time()

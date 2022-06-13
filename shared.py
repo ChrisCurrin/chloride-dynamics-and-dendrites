@@ -12,6 +12,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import matplotlib
+from tables import NaturalNameWarning
 
 from utils import settings
 from utils.use_files import create_dir
@@ -25,12 +26,32 @@ t_vec = None
 initialised = False
 __KWARGS__ = {}
 
+warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
-def INIT(reinit=False):
+def INIT(reinit=False, log_level=settings.LOG_LEVEL):
     global initialised, t_vec, __KWARGS__
 
-    for logger_name in ["matplotlib.mathtext, colormath.color_conversions", "asyncio", "PIL.PngImagePlugin", "fontTools.subset"]:
+    # set up logging
+    handler = colorlog.StreamHandler()
+    fmt = '%(asctime)s %(name)-10s [%(filename)-10s:%(lineno)4d] %(levelname)-8s \t %(message)s'
+    datefmt = '%m-%d %H:%M:%S'
+    handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s' + fmt, datefmt=datefmt))
+
+    logging.basicConfig(
+            level=log_level,
+            format=fmt,
+            handlers=[handler],
+            datefmt=datefmt,
+            force=reinit)
+
+    for logger_name in ["colormath.color_conversions",
+                        "asyncio",
+                        "PIL.PngImagePlugin",]:
         logging.getLogger(logger_name).setLevel(logging.ERROR)
+
+    import matplotlib.pyplot as plt
+
+    plt.set_loglevel("info")
 
     if initialised and not reinit:
         return True

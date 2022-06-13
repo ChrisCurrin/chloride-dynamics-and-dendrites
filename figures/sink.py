@@ -12,8 +12,6 @@ from matplotlib.colors import ListedColormap
 from tqdm import tqdm
 
 import matplotlib
-
-from utils.settings import IL, LOCATION_X_
 matplotlib.use('pdf')
 
 try:
@@ -25,9 +23,10 @@ except ModuleNotFoundError:
     script_dir = Path(__file__).parent.parent.absolute()
     sys.path.insert(0, str(script_dir))
     from utils import settings
+from utils.settings import IL, LOCATION_X_
 
 
-from inhib_level.math import accumulation_index, lambda_d
+from inhib_level.math import accumulation_index, ghk, inv_nernst, lambda_d
 from utils.plot_utils import (
     adjust_spines,
     copy_lines,
@@ -185,20 +184,22 @@ def figure_sink(**kwargs):
                             )
                         
                         ev = env_var()
-                        pcl, ecl, phco3, ehco3, egaba, vinit = (
+                        pcl, ecl, phco3, ehco3, egaba_init, clo, hco3i, hco3o, vinit = (
                             ev["pcl"],
                             ev["ecl"],
                             ev["phco3"],
                             ev["ehco3"],
                             ev["egaba"],
+                            ev["clo"],
+                            ev["hco3i"],
+                            ev["hco3o"],
                             ev["v_init"],
                         )
-                        egaba_dict[(n, diam, l, "radial", loc)] = (
-                            pcl * ecl_dict[key]["radial_dends_1"].iloc[-1] + phco3 * ehco3
-                        )
-                        egaba_dict[(n, diam, l, "sink", loc)] = (
-                            pcl * ecl_dict[key]["sink_1"].iloc[-1] + phco3 * ehco3
-                        )
+                        cli = inv_nernst(ecl_dict[key]["radial_dends_1"].iloc[-1], ev["clo"])
+                        egaba = ghk([clo, hco3o],[cli, hco3i], [pcl, phco3], [-1, -1])
+                        egaba_dict[(n, diam, l, "radial", loc)] = egaba
+                        cli_sink = inv_nernst(ecl_dict[key]["sink_1"].iloc[-1], ev["clo"])
+                        egaba_dict[(n, diam, l, "sink", loc)] = ghk([clo, hco3o],[cli_sink, hco3i], [pcl, phco3], [-1, -1])
                 if is_example:
                     plot_dict[(num_branches, diam)] = run_plot_dict[str(num_branches)]
                     # join il_dicts with il_dict
@@ -434,6 +435,7 @@ if __name__ == "__main__":
     # parse arguments
     # with default radials_diff=(2, 4, 6, 8), diams=(1., 0.5, 1.5, 2.), constant_L=True, kcc2="Y"
     import argparse
+    from shared import INIT
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("-r", "--radials_diff", type=int, nargs="*", default=[2, 4, 6, 8])
@@ -447,11 +449,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.very_verbose:
-        logging.basicConfig(level=logging.DEBUG, force=True)
+        INIT(reinit=True, log_level=logging.DEBUG)
     elif args.verbose:
-        logging.basicConfig(level=logging.INFO, force=True)
+        INIT(reinit=True, log_level=logging.INFO)
     else:
-        logging.basicConfig(level=logging.WARNING, force=True)
+        INIT(reinit=True, log_level=logging.WARNING)
 
     # convert to int
     radials_diff = tuple([int(r) for r in args.radials_diff])
@@ -465,3 +467,20 @@ if __name__ == "__main__":
 
     # run
     figure_sink(radials_diff=radials_diff, diams=diams, constant_L=constant_L, kcc2=kcc2)
+
+    # examples
+    # ! python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c Y
+    # ! python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c N
+    # python figures/sink.py -r 2 -d 1 0.5 1.5 2
+    # python figures/sink.py -r 6 -d 1 0.5 -c Y
+    # python figures/sink.py -r 6 -d 1 0.5 -c N
+    # python figures/sink.py -r 6 -d 1 1.5 -c N
+    # python figures/sink.py -r 6 -d 1 1.5 -c Y
+    # python figures/sink.py -r 6 -d 1 2.0 -c Y
+    # python figures/sink.py -r 6 -d 1 2.0 -c N
+    # python figures/sink.py -r 8 -d 1 0.5 -c Y
+    # python figures/sink.py -r 8 -d 1 0.5 -c N
+    # python figures/sink.py -r 8 -d 1 1.5 -c N
+    # python figures/sink.py -r 8 -d 1 1.5 -c Y
+    # python figures/sink.py -r 8 -d 1 2.0 -c Y
+    # python figures/sink.py -r 8 -d 1 2.0 -c N

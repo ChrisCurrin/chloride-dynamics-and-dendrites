@@ -611,3 +611,37 @@ def offset_index(il_dict, num_dendrites_arr):
         for i, other_il_key in enumerate(group_keys):
             offset_dict[other_il_key] = il_dict[other_il_key] / base_il
     return offset_dict
+
+
+def inv_nernst(e, c_out): 
+    """Inverse of Nernst equation
+
+    :math: `E = RTF/z x ln(c_out / c_in)`
+    
+    for z = -1 
+    :math: `c_in = c_out x exp(E/RTF)`
+
+    :param e: voltage in mV
+    :param c_out: concentration in mM
+
+    :return: concentration in mM
+
+    """
+    RTF = (h.R * (h.celsius+273.15)) / h.FARADAY
+    return np.exp((1/RTF) * e/1000) * c_out
+
+
+def ghk(C_outs, C_ins, ps, zs):
+    """Calculate the GHK current for a given set of concentrations, proportions, and valences"""
+    dividend = 0
+    divisor = 0
+    RTF = (h.R * (h.celsius+273.15)) / h.FARADAY
+    for cin, cout, p, z  in zip(C_ins, C_outs, ps, zs):
+        assert abs(z) == 1, "only monovalent ions supported"
+        if z>0:
+            dividend += p*cout
+            divisor += p*cin
+        else:
+            dividend += p*cin
+            divisor += p*cout
+    return RTF*np.log(dividend/divisor)*1000
