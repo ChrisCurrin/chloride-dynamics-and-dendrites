@@ -709,7 +709,7 @@ def figure_dynamic_il_time():
                 egabas, xmin=0, xmax=e_x, colors=e_colors, **egaba_style
             )
             ax_eXl[r].vlines(
-                e_y, ymin=egaba, ymax=egabas, colors=e_colors, **egaba_style
+                e_y, ymin=egaba, ymax=egabas[:len(e_y)], colors=e_colors, **egaba_style
             )
             if r == 0:
                 sample_lines = list(flatten([tmpX.get_lines(), tmp0.get_lines()]))
@@ -852,6 +852,7 @@ def figure_dynamic_il_time():
 
     if settings.SAVE_FIGURES:
         plot_save("output/figure_dynamic_time.png", figs=[fig], close=False)
+        plot_save("output/figure_dynamic_time.svg", figs=[fig], close=False)
         plot_save("output/figure_dynamic_time.pdf")
     else:
         import shared
@@ -861,7 +862,6 @@ def figure_dynamic_il_time():
 
 if __name__ == "__main__":
     # parse arguments
-    # with default radials_diff=(2, 4, 6, 8), diams=(1., 0.5, 1.5, 2.), constant_L=True, kcc2="Y"
     import argparse
     from shared import INIT
 

@@ -8,7 +8,16 @@ from matplotlib.axes import Axes
 from matplotlib.cbook import flatten
 from matplotlib.colors import ListedColormap
 
-from utils import settings
+try:
+    from utils import settings
+except ModuleNotFoundError:
+    import sys
+    from pathlib import Path
+    # find the script's directory
+    script_dir = Path(__file__).parent.parent.absolute()
+    sys.path.insert(0, str(script_dir))
+    from utils import settings
+
 from inhib_level.math import accumulation_index
 from utils.plot_utils import (
     adjust_spines,
@@ -25,7 +34,7 @@ import logging
 logger = logging.getLogger("IL location")
 
 
-def figure_optimal_loc():
+def figure_optimal_loc(**kwargs):
     """ How does dynamic Cl- affect IL
 
     """
@@ -43,7 +52,7 @@ def figure_optimal_loc():
     sample_N = 4
     IL_measure = "IL"
     row_order = {"morph": -1, "measure": 0, "maxIL": 1}
-    linestyles = {"0": ":", "AccIdx": "-", "i": "--"}
+    linestyles = {"0": ":", "AccIdx": "-", "i": "--", "Focal": "--"}
     plot_names = ["0", "i", "Focal", "Branch"]
     markers = ["o", "^", "d", "D"]
     measure_markers = dict(zip(plot_names, markers))
@@ -142,7 +151,7 @@ def figure_optimal_loc():
 
         # clustering
         df_cluster_focal = pd.DataFrame(
-            index=loc_list, columns=pd.Index(radials_diff, name="Branches")
+            index=full_loc_list, columns=pd.Index(radials_diff, name="Branches")
         )
         df_cluster_focal.name = "Focal"
         df_cluster_branch = pd.DataFrame(
@@ -154,13 +163,15 @@ def figure_optimal_loc():
         for num_branches in df_cluster_focal.columns:
             for loc in df_cluster_focal.index:
                 logger.info(f"CLUSTERED num_branches={num_branches} loc={loc}")
+                quick_precise_flag = "precise" if num_branches <= 10 else "quick"
                 main_args = (
                     f'--radial {num_branches} --loc {" ".join([str(loc)]*num_branches)} '
                     f"--e_offsets {e_offset} --synapse_dists clustered --kcc2={kcc2} "
                     f"--plot_group_by=False "
                     f"--plot_group_by=num_dendrites --plot_color_by=num_synapses "
                     f"--tstop={tstop} --tm={tm} --diams {1} "
-                    f"--precise --sections radial_dends_1 radial_dends_2 --nseg=267 "
+                    f"--{quick_precise_flag} "
+                    f"--sections radial_dends_1 radial_dends_2 --nseg=267 "
                     f"--plot_shape"
                 )
                 plot_dict, sim_type, saved_args = run_inhib_level(main_args)
@@ -235,14 +246,14 @@ def figure_optimal_loc():
         df_cluster_branch.plot()
 
         # spacing of clustering
-        inh_distances = [0.001, 0.01, 0.1]
+        inh_distances = [0.1]
         locs_i = np.round(np.arange(0.01, 0.11, 0.01), 5)
         locs_i = loc_list[1:-1]
         df_space = pd.DataFrame(index=locs_i,
                                 columns=pd.MultiIndex.from_product([inh_distances, radials_diff],
                                                                    names=['Spacing', 'Branches']))
         df_long_space = pd.DataFrame(columns=['Spacing', 'Branches', 'i', 'd', 'IL'])
-        for num_branches, loc in itertools.product([4], locs_i):
+        for num_branches, loc in itertools.product(radials_diff, locs_i):
             for inh_dist in inh_distances:
                 logger.info(f"num_branches={num_branches} loc={loc} inh_dist={inh_dist}")
                 loc_xs = np.round(np.linspace(np.max([0.001, loc - inh_dist]),
@@ -261,6 +272,7 @@ def figure_optimal_loc():
                 index = il_dict['units'].index
                 # i = d
                 loc_idx = abs(loc - index.levels[1]).argmin()
+                loc_xs_idx = np.searchsorted(index.levels[1], loc_xs)
                 for key, _df in il_dict.items():
                     if key == 'units':
                         continue
@@ -270,8 +282,9 @@ def figure_optimal_loc():
                     cl = key[key.index('(') + 1:key.index(')')]
         
                     il = _df.loc[('radial_dends_1', tstop)].astype(float)
-                    df_space.loc[loc, (inh_dist, n)] = (il.idxmax(), il.max())
+                    # df_space.loc[loc, (inh_dist, n)] = (il.idxmax(), il.max())
                     df_long_space.loc[df_long_space.shape[0]] = (inh_dist, n, loc, il.idxmax(), il.max())
+                    df_space.loc[loc, (inh_dist, n)] = (il.index[loc_xs_idx], il.iloc[loc_xs_idx])
         
         df_long_space['d_round'] = df_long_space.d.round(2)
         # df_long_space['i space N'] = \
@@ -335,15 +348,48 @@ def figure_optimal_loc():
             measure = df_measure.name
             ax_radials_diff = fig.add_subplot(gs[row_order["measure"], m])
             ax_radials_diff.set_title(f"IL at {measure}", fontsize="medium")
+
+            if measure == "Branch":
+                _df_measure_new = pd.DataFrame(columns=df_measure.columns, index=df_measure.index)
+                _df_measure_spacing = pd.DataFrame(columns=df_measure.columns, index=df_measure.index)
+                for col in df_measure.columns:
+                    # get spacing
+                    loc = np.linspace(0, 1, col+2)[1:-1]
+                    # and closest loc for each synapse
+                    _df_measure_new[col] = df_measure[col].iloc[np.searchsorted(df_measure.index, loc)]
+
+                    # spacing
+                    _df_spacing_col = df_space.xs(col, axis=1, level=1)
+                    # _df_spacing_col_exploded = _df_spacing_col.explode(list(_df_spacing_col.columns)).infer_objects()
+                    for spacing in _df_spacing_col.columns:
+                        for index, value in _df_spacing_col[spacing].iteritems():
+                            idx, val = value
+                            _df_measure_spacing.loc[idx.values, col] = val.values
+                            # this plots the spacing
+                            # ax_radials_diff.plot(idx.values, val.values,
+                            #     linestyle='-',
+                            #     lw=0.1,
+                            #     marker=markers[m],
+                            #     ms=1,
+                            #     mec="k",
+                            #     mew=0.1,
+                            #     color=cmap[list(df_measure.columns).index(col)],
+                            #     clip_on=True,
+                            # )
+                    
+                df_measure = _df_measure_new
+
             df_max = df_measure.copy()
             df_max.iloc[:, :] = np.nan  # set all to nan
+            # get (row_idxs,col_idxs)
             max_idxs = np.where(
                 df_measure == df_measure.max(axis=0)
-            )  # get (row_idxs,col_idxs)
+            )  
             for row, col in zip(*max_idxs):
+                # assign only max values
                 df_max.iloc[row, col] = df_measure.iloc[
                     row, col
-                ]  # assign only max values
+                ]  
                 ax_radials_diff.annotate(
                     df_measure.columns[col],
                     xy=(df_measure.index[row], df_measure.iloc[row, col]),
@@ -356,7 +402,7 @@ def figure_optimal_loc():
                 c for n, c in sorted(settings.n_branches_cmap.items()) if n in df_max
             ]
             # plot all points
-            ls = linestyles.get(measure, "--")
+            ls = linestyles.get(measure, "None")
             df_measure.plot(
                 ax=ax_radials_diff,
                 linestyle=ls,
@@ -388,14 +434,17 @@ def figure_optimal_loc():
                 max_idx, max_measure, max_val = max_il[r]
                 if val > max_val:
                     max_il[r] = (idx, measure, val)
-            if ax_radials_diff.get_ylim()[0] < -20:
-                ax_radials_diff.set_ylim(bottom=np.nanmin(df_max.values) * 1.05)
+            # if ax_radials_diff.get_ylim()[0] < -20:
+                # ax_radials_diff.set_ylim(bottom=np.nanmin(df_max.values) * 1.05)
 
             ax_radials_diff.set_ylim(top=np.nanmax(df_measure.values) * 1.1)
 
-            ax_radials_diff.set_xlim(0, 0.2 if measure in ["0", "i"] else 1)
+            ax_radials_diff.set_xlim(0, 0.2 if measure in ["0", "i", "Focal"] else 1)
             if m == 0:
-                ax_radials_diff.set_ylabel(f"max {settings.IL}")
+                ax_radials_diff.set_ylabel(f"${settings.IL}_{{0}}$")
+            else:
+                ax_radials_diff.set_ylabel(settings.ILdi)
+                
             ax_radials_diff.set_xlabel(settings.LOCATION_X_, fontsize="xx-small")
 
         # merge plot
@@ -403,16 +452,26 @@ def figure_optimal_loc():
 
         gs_merge = gridspec.GridSpecFromSubplotSpec(
             1,
-            3,
+            2,
             gs[row_order["maxIL"], :],
-            width_ratios=[0.2, 1, 0.2],
-            wspace=0,
+            width_ratios=[1, 0.3],
+            wspace=0.1,
             hspace=0,
         )
         gs_morph = gridspec.GridSpecFromSubplotSpec(
             2, len(radials_diff), gs[row_order["morph"], :], wspace=0, hspace=-0.95
         )
-        ax_merge = fig.add_subplot(gs_merge[1])
+        ax_merge = fig.add_subplot(gs_merge[0])
+        ax_zoom = create_zoom(
+                    ax_merge,
+                    ("40%", "70%"),
+                    lines=[],  # copy all lines
+                    loc="upper left",
+                    inset_kwargs=dict(bbox_to_anchor=(1.05, 0, 0.95, 1), bbox_transform=ax_merge.transAxes),
+                    borderpad=0.0,
+                    xlim=(0.0, 0.2),
+                    connector_kwargs="None",
+                )
 
         for m, (n, (idx, measure, val)) in enumerate(max_il.items()):
             df_measure = df_il_r[measure][n]
@@ -451,28 +510,17 @@ def figure_optimal_loc():
                 )
                 df_four[IL_measure] = df_four[IL_measure].astype(float)
 
-                ax_zoom = create_zoom(
-                    ax_merge,
-                    ("40%", "70%"),
-                    lines=[],  # copy all lines
-                    loc="upper center",
-                    borderpad=0.0,
-                    xlim=(0.0, 0.2),
-                    ylim=(0.0, df_four[IL_measure].max() * 1.05),
-                    connector_kwargs="None",
-                )
-
                 sns.lineplot(
                     x=settings.LOCATION_X_,
                     y=IL_measure,
                     # hue='Branches',
                     style="Measure",
-                    style_order=["AccIdx", "0", "i"],
+                    style_order=["AccIdx", "i", "0"],
                     # markers=['.']+markers, mec='k',
                     color=settings.cmap_dict["n_e"][n]["line"],
                     ax=ax_zoom,
                     data=df_four,
-                ).legend(loc=(1.01, 0), fontsize="xx-small")
+                ).legend(fontsize="xx-small")
                 ax_zoom.plot(
                     idx,
                     val,
@@ -482,7 +530,7 @@ def figure_optimal_loc():
                     ms=8,
                     mec="k",
                 )
-                ax_zoom.set(xlabel="", ylabel="")
+                ax_zoom.set(xlabel="", ylabel="", xlim=(0, 0.2), ylim=(0, df_four[IL_measure].max() * 1.1))
             # setup morph axes
             ax_morph = fig.add_subplot(gs_morph[0, m])
             ax_morph_egaba = fig.add_subplot(gs_morph[1, m])
@@ -548,18 +596,51 @@ def figure_optimal_loc():
         # clean up merged axis
         ax_merge.set_ylim(0, max([val for _, _, val in max_il.values()]) * 1.1)
 
-        ax_merge.set_ylabel(f"max {settings.IL}")
+        ax_merge.set_ylabel("Largest IL at\nany location")
         ax_merge.set_xlabel(settings.LOCATION_X_)
         ax_merge.set_xlim(0, 1)
         ax_merge.set_xticks(np.arange(0, 1.1, 0.1))
         ax_merge.set_xticks(df_il_r.index, minor=True)
 
-    max_inhib_level()
+    radials_diff = list(kwargs.get("radials_diff", (2, 4, 6, 8, 16)))
+
+    max_inhib_level(radials_diff)
 
     if settings.SAVE_FIGURES:
         plot_save("output/figure_optimal_loc.png", figs=[fig], close=False)
+        plot_save("output/figure_optimal_loc.svg", figs=[fig], close=False)
         plot_save("output/figure_optimal_loc.pdf")
     else:
         import shared
 
         shared.show_n(1)
+
+
+
+if __name__ == "__main__":
+    # parse arguments
+    import argparse
+    from shared import INIT
+
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("-r", "--radials_diff", type=int, nargs="*", default=[2, 4, 6, 8, 16])
+    # add verbose
+    parser.add_argument("-v", "--verbose", action="store_true")
+    # add very verbose
+    parser.add_argument("-vv", "--very_verbose", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args()
+
+    if args.very_verbose:
+        INIT(reinit=True, log_level=logging.DEBUG)
+    elif args.verbose:
+        INIT(reinit=True, log_level=logging.INFO)
+    elif args.quiet:
+        INIT(reinit=True, log_level=logging.ERROR)
+    else:
+        INIT(reinit=True, log_level=logging.WARNING)
+
+    radials_diff = tuple([int(r) for r in args.radials_diff])
+
+    # run
+    figure_optimal_loc(radials_diff=radials_diff)

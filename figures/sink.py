@@ -469,18 +469,18 @@ if __name__ == "__main__":
     figure_sink(radials_diff=radials_diff, diams=diams, constant_L=constant_L, kcc2=kcc2)
 
     # examples
-    # ! python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c Y
-    # ! python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c N
+    # python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c Y
+    # python figures/sink.py -r 4 -d 1 0.5 1.5 2 -c N
     # python figures/sink.py -r 2 -d 1 0.5 1.5 2
     # python figures/sink.py -r 6 -d 1 0.5 -c Y
     # python figures/sink.py -r 6 -d 1 0.5 -c N
-    # python figures/sink.py -r 6 -d 1 1.5 -c N
     # python figures/sink.py -r 6 -d 1 1.5 -c Y
+    # python figures/sink.py -r 6 -d 1 1.5 -c N
     # python figures/sink.py -r 6 -d 1 2.0 -c Y
     # python figures/sink.py -r 6 -d 1 2.0 -c N
     # python figures/sink.py -r 8 -d 1 0.5 -c Y
     # python figures/sink.py -r 8 -d 1 0.5 -c N
-    # python figures/sink.py -r 8 -d 1 1.5 -c N
     # python figures/sink.py -r 8 -d 1 1.5 -c Y
+    # python figures/sink.py -r 8 -d 1 1.5 -c N
     # python figures/sink.py -r 8 -d 1 2.0 -c Y
     # python figures/sink.py -r 8 -d 1 2.0 -c N

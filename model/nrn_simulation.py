@@ -134,6 +134,8 @@ def set_global_cli(syn_dict, egaba=-65.0):
 
     """
     from shared import env_var
+    from inhib_level.math import ghk
+
     h.finitialize()
     syn_obj = syn_dict['object']
     sec_obj = syn_dict['sec']
@@ -146,12 +148,18 @@ def set_global_cli(syn_dict, egaba=-65.0):
     phco3 = syn_obj.phco3
     assert ehco3 < 0.
     
-    cli = ((pcl*clo + phco3*hco3o) * np.exp((1/RTF) * (egaba/1000)) - phco3*hco3i)
+    cli = ((pcl*clo + phco3*hco3o) * np.exp((1/RTF) * (egaba/1000)) - phco3*hco3i)/pcl
 
     ecl = h.nernst(cli, clo, -1)
     # try ecl explicitly as this works if there's no kcc2
     sec_obj.ecl = ecl
     h.cli0_cl_ion = cli
+
+    # check the calculation
+    _egaba = ghk([clo, hco3o], [cli, hco3i], [pcl, phco3], [-1, -1])
+    
+    assert egaba == np.round(_egaba, 5), "error in calculating Cl_i from EGABA"
+
     env_var(cli=cli, clo=clo, pcl=syn_obj.pcl, ecl=ecl, 
             hco3i=hco3i, hco3o=hco3o, phco3=syn_obj.phco3, ehco3=sec_obj.ehco3,
             egaba=egaba)

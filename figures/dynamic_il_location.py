@@ -8,7 +8,16 @@ from matplotlib.axes import Axes
 from matplotlib.cbook import flatten
 from matplotlib.colors import ListedColormap
 
-from utils import settings
+try:
+    from utils import settings
+except ModuleNotFoundError:
+    import sys
+    from pathlib import Path
+    # find the script's directory
+    script_dir = Path(__file__).parent.parent.absolute()
+    sys.path.insert(0, str(script_dir))
+    from utils import settings
+
 from inhib_level.math import accumulation_index, ghk, inv_nernst
 from utils.plot_utils import (
     adjust_spines,
@@ -236,11 +245,13 @@ def figure_dynamic_il_loc():
                     ev["hco3o"],
                     ev["v_init"],
                 )
-                cli = inv_nernst(ecl_dict[dyn_iter_label]["radial_dends_1"].iloc[-1], ev["clo"])
-                egaba = ghk([clo, hco3o],[cli, hco3i], [pcl, phco3], [-1, -1])
                 
                 sta_iter_label = [key for key in il_dict if "(-)" in key][0]
                 dyn_iter_label = [key for key in il_dict if settings.DELTA in key][0]
+                
+                cli = inv_nernst(ecl_dict[dyn_iter_label]["radial_dends_1"].iloc[-1], ev["clo"])
+                egaba = ghk([clo, hco3o],[cli, hco3i], [pcl, phco3], [-1, -1])
+
                 df_loc[_STATIC, loc] = il_dict[sta_iter_label].loc[
                     ("radial_dends_1", tstop)
                 ]
@@ -422,7 +433,7 @@ def figure_dynamic_il_loc():
                     _df["clim"] = None
                     continue
                 elif key == "EGABA":
-                    _df["clim"][0] = egaba
+                    _df["clim"][0] = egaba_init
                 elif key == _ILDIFF:
                     _df["clim"] = [0, round(_df["clim"][1])]
                 elif shared_clim:
@@ -535,8 +546,32 @@ def figure_dynamic_il_loc():
 
     if settings.SAVE_FIGURES:
         plot_save("output/figure_dynamic_loc.png", figs=[fig], close=False)
+        plot_save("output/figure_dynamic_loc.svg", figs=[fig], close=False)
         plot_save("output/figure_dynamic_loc.pdf")
     else:
         import shared
 
         shared.show_n(1)
+
+
+if __name__ == "__main__":
+    # parse arguments
+    import argparse
+    from shared import INIT
+
+    parser = argparse.ArgumentParser(description="")
+    # add verbose
+    parser.add_argument("-v", "--verbose", action="store_true")
+    # add very verbose
+    parser.add_argument("-vv", "--very_verbose", action="store_true")
+    args = parser.parse_args()
+
+    if args.very_verbose:
+        INIT(reinit=True, log_level=logging.DEBUG)
+    elif args.verbose:
+        INIT(reinit=True, log_level=logging.INFO)
+    else:
+        INIT(reinit=True, log_level=logging.WARNING)
+
+    # run
+    figure_dynamic_il_loc()

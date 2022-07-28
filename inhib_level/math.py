@@ -213,16 +213,31 @@ def dvv(
                 h.finitialize()
                 h.run()
                 h.useCV()
-
+            if t_vec.size() == 0:
+                t_vec.record(h.__getattribute__("_ref_t"))
+                h.finitialize()
+                h.run()
+                if t_vec.size() == 0:
+                    raise RuntimeError(
+                        "Time vec still empty. "
+                        "Something went wrong with the simulation."
+                    )
             t_index = np.array(t_vec)  # get time h.Vector as numpy index
             #  note we can get away with accessing the parent method's v_vec because the recording location changes, not
             # the object itself
             np_v = v_vec.as_numpy()  # numpy reference to hoc Vector
             # set area under the curve for integration to be between Vm and v_init
             np_v = np_v - v_init  # subtract resting potential
-            _df_v_t = pd.DataFrame(
-                data=np_v.copy(), index=t_index, columns=_columns
-            )  # copies data
+            try:
+                _df_v_t = pd.DataFrame(
+                    data=np_v.copy(), index=t_index, columns=_columns
+                )  # copies data
+            except ValueError as err:
+                logger.error(
+                    f"Error creating dataframe for {_columns} t_index.shape={t_index.shape}, np_v.shape={np_v.shape}"
+                )
+                logger.error(f"t_vec.size() = {t_vec.size()} (quick={quick})")
+                raise err
             if _df.shape[1] > 0:
                 _df = _df.join(_df_v_t, how="outer")
             else:
@@ -290,7 +305,8 @@ def dvv(
                         continue
                 N += sec.nseg + 2 # included 0.0 and 1.0 for each section
 
-        pbar = tqdm(total=N, desc=f"dvv for {neuron.name}")
+        desc = f"dvv  for {neuron.name}"
+        pbar = tqdm(total=N, desc=desc, leave=False)
         for i, sec in enumerate(neuron.sections):
             if sections is not None and sec.name() != "soma":
                 if (type(sections[0]) is str and sec.name() not in sections) or (
@@ -358,6 +374,8 @@ def dvv(
                 stim_obj.loc(sec(seg.x))
 
                 deactivate_inhibition(neuron)
+                full_desc = f"{desc}[i={inhib_sec.name()}({inhib_loc:.2f}) -> d={sec.name()}({x:.5f})]"
+                pbar.set_description(full_desc)
                 df_v = init_and_run(df_v, columns)
                 if calc_shunt:
                     # analytical solution for shunt level
@@ -371,6 +389,7 @@ def dvv(
 
                 # run again with inhibition
                 activate_inhibition(neuron, g_i)
+                pbar.set_description(full_desc.replace('dvv ', 'dvv*'))
                 df_v_star, df_ecl = init_and_run(df_v_star, columns, _df_ecl=df_ecl)
                 if calc_shunt:
                     calc_z(sec, seg.x)

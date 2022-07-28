@@ -46,7 +46,8 @@ def INIT(reinit=False, log_level=settings.LOG_LEVEL):
 
     for logger_name in ["colormath.color_conversions",
                         "asyncio",
-                        "PIL.PngImagePlugin",]:
+                        "PIL.PngImagePlugin",
+                        "fontTools.subset"]:
         logging.getLogger(logger_name).setLevel(logging.ERROR)
 
     import matplotlib.pyplot as plt
